@@ -1,0 +1,14 @@
+services:
+  db:
+    build: postgres
+    container_name: db
+    volumes:
+    - ./postgres:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: $DB_USERNAME
+      POSTGRES_PASSWORD: $DB_PASSWORD
+      POSTGRES_MULTIPLE_DATABASES: $DB_DATABASE
+      TZ: "GMT"
+      PGTZ: "GMT"
+    ports:
+      - "$DB_PORT:$DB_PORT"
