@@ -2,13 +2,18 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from uuid import UUID
 
-# Dữ liệu client gửi lên khi tạo user
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
 
-# Dữ liệu server trả về (che đi mật khẩu)
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class UserResponse(BaseModel):
     id: UUID
     email: EmailStr
@@ -17,3 +22,12 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
