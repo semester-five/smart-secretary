@@ -12,3 +12,26 @@ services:
       PGTZ: "GMT"
     ports:
       - "$DB_PORT:$DB_PORT"
+
+  backend:
+    build: be
+    container_name: backend
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: $DB_PORT
+      DB_USERNAME: $DB_USERNAME
+      DB_PASSWORD: $DB_PASSWORD
+      DB_DATABASE: $DB_DATABASE
+      SECRET_KEY: $SECRET_KEY
+      ALGORITHM: $ALGORITHM
+      ACCESS_TOKEN_EXPIRE_MINUTES: $ACCESS_TOKEN_EXPIRE_MINUTES
+      REFRESH_TOKEN_EXPIRE_DAYS: $REFRESH_TOKEN_EXPIRE_DAYS
+      ALLOWED_ORIGINS: $ALLOWED_ORIGINS
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./be:/app
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
