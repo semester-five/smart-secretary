@@ -15,6 +15,8 @@ export async function loginAction(email: string, password: string): Promise<Auth
     formData.append("username", email);
     formData.append("password", password);
 
+    console.log('API_URL:', API_URL);
+
     const res = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

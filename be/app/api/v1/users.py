@@ -1,7 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastcrud import PaginatedListResponse, paginated_response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -40,13 +39,13 @@ async def update_current_user(
     return UserRead.model_validate(updated)
 
 
-@router.get("", response_model=PaginatedListResponse[UserRead])
+@router.get("", response_model=dict[str, Any])
 async def list_users(
     current_user: CurrentUser,
     db: DBSession,
     page: int = 1,
     items_per_page: int = 20,
-) -> PaginatedListResponse[UserRead]:
+) -> dict[str, Any]:
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -58,4 +57,4 @@ async def list_users(
         limit=items_per_page,
         schema_to_select=UserRead,
     )
-    return paginated_response(crud_data=result, page=page, items_per_page=items_per_page)
+    return result

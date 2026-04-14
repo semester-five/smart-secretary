@@ -5,13 +5,13 @@ services:
     volumes:
     - ./postgres:/docker-entrypoint-initdb.d
     environment:
-      POSTGRES_USER: $DB_USERNAME
-      POSTGRES_PASSWORD: $DB_PASSWORD
-      POSTGRES_MULTIPLE_DATABASES: $DB_DATABASE
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: ${DB_DATABASE}
       TZ: "GMT"
       PGTZ: "GMT"
     ports:
-      - "$DB_PORT:$DB_PORT"
+      - "${DB_PORT}:${DB_PORT}"
 
   backend:
     build: be
@@ -20,18 +20,36 @@ services:
       - db
     environment:
       DB_HOST: db
-      DB_PORT: $DB_PORT
-      DB_USERNAME: $DB_USERNAME
-      DB_PASSWORD: $DB_PASSWORD
-      DB_DATABASE: $DB_DATABASE
-      SECRET_KEY: $SECRET_KEY
-      ALGORITHM: $ALGORITHM
-      ACCESS_TOKEN_EXPIRE_MINUTES: $ACCESS_TOKEN_EXPIRE_MINUTES
-      REFRESH_TOKEN_EXPIRE_DAYS: $REFRESH_TOKEN_EXPIRE_DAYS
-      ALLOWED_ORIGINS: $ALLOWED_ORIGINS
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      SUPABASE_BUCKET: ${SUPABASE_BUCKET}
     ports:
       - "8000:8000"
     volumes:
       - ./be:/app
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    build: fe
+    container_name: frontend
+    depends_on:
+      - backend
+    environment:
+      API_URL: ${FE_API_URL}
+    ports:
+      - "${FE_PORT}:3000"
+    volumes:
+      - ./fe:/app
+      - /app/node_modules
+    command: >
+      sh -c "npm install && npm run dev -- --hostname 0.0.0.0 --port 3000"

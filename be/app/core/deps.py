@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.crud.user import user_crud
 from app.models.user import User
+from app.schemas.user import UserRead
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -31,7 +32,12 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    user = await user_crud.get(db, id=int(user_id))
+    user = await user_crud.get(
+        db,
+        id=int(user_id),
+        schema_to_select=UserRead,
+        return_as_model=True,
+    )
     if user is None:
         raise credentials_exception
     return user
@@ -56,7 +62,12 @@ async def get_current_user_from_refresh(
     if user_id is None:
         raise credentials_exception
 
-    user = await user_crud.get(db, id=int(user_id))
+    user = await user_crud.get(
+        db,
+        id=int(user_id),
+        schema_to_select=UserRead,
+        return_as_model=True,
+    )
     if user is None:
         raise credentials_exception
     return user

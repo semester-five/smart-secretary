@@ -14,7 +14,7 @@ from app.core.security import (
 from app.crud.user import user_crud
 from app.models.user import User
 from app.schemas.token import Token
-from app.schemas.user import UserCreate, UserCreateInternal, UserRead
+from app.schemas.user import UserAuthRead, UserCreate, UserCreateInternal, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -67,7 +67,12 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ) -> Token:
-    user = await user_crud.get(db, email=form_data.username)
+    user = await user_crud.get(
+        db,
+        email=form_data.username,
+        schema_to_select=UserAuthRead,
+        return_as_model=True,
+    )
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
