@@ -1,8 +1,10 @@
 import uuid
+from typing import Literal
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -14,6 +16,8 @@ from app.schemas.project import (
     MeetingRead,
     ProjectCreate,
     ProjectMemberCreate,
+    ProjectMemberListItem,
+    ProjectMemberListResponse,
     ProjectMemberRead,
     ProjectRead,
     ProjectUpdate,
@@ -106,6 +110,15 @@ async def _ensure_project_cover_editor(
         return
 
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+
+
+async def _resolve_user_by_email(db: AsyncSession, email: str) -> User | None:
+    return await db.scalar(
+        select(User).where(
+            func.lower(User.email) == email.lower(),
+            User.deleted_at.is_(None),
+        )
+    )
 
 
 @router.get("", response_model=list[ProjectRead])
@@ -256,26 +269,42 @@ async def add_project_member(
     project = await _get_project_or_404(db, project_id)
     await _ensure_project_admin(db, project, current_user)
 
-    target_user = await db.scalar(
-        select(User).where(User.id == payload.user_id, User.deleted_at.is_(None))
-    )
+    target_user = await _resolve_user_by_email(db, str(payload.email))
     if target_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     existing = await db.scalar(
         select(ProjectMember).where(
             ProjectMember.project_id == project_id,
-            ProjectMember.user_id == payload.user_id,
+            ProjectMember.user_id == target_user.id,
             ProjectMember.deleted_at.is_(None),
         )
     )
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member")
 
+    existing_soft_deleted = await db.scalar(
+        select(ProjectMember).where(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == target_user.id,
+            ProjectMember.deleted_at.is_not(None),
+        )
+    )
+
     now = datetime.now(UTC)
+    if existing_soft_deleted is not None:
+        existing_soft_deleted.deleted_at = None
+        existing_soft_deleted.member_role = payload.member_role
+        existing_soft_deleted.updated_at = now
+        existing_soft_deleted.updated_by = current_user.id
+
+        await db.commit()
+        await db.refresh(existing_soft_deleted)
+        return ProjectMemberRead.model_validate(existing_soft_deleted)
+
     member = ProjectMember(
         project_id=project_id,
-        user_id=payload.user_id,
+        user_id=target_user.id,
         member_role=payload.member_role,
         created_at=now,
         updated_at=now,
@@ -283,9 +312,106 @@ async def add_project_member(
         updated_by=current_user.id,
     )
     db.add(member)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member")
     await db.refresh(member)
     return ProjectMemberRead.model_validate(member)
+
+
+@router.get("/{project_id}/members", response_model=ProjectMemberListResponse)
+async def list_project_members(
+    project_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+    page: int = 1,
+    items_per_page: int = 20,
+    search: str | None = None,
+    role: Literal["owner", "editor", "viewer"] | None = None,
+    sort_by: Literal["created_at", "full_name", "email", "member_role"] = "created_at",
+    sort_order: Literal["asc", "desc"] = "desc",
+) -> ProjectMemberListResponse:
+    project = await _get_project_or_404(db, project_id)
+    await _ensure_project_access(db, project, current_user)
+
+    if page < 1:
+        page = 1
+    if items_per_page < 1:
+        items_per_page = 20
+
+    search_pattern = f"%{search.lower()}%" if search else None
+
+    filters = [
+        ProjectMember.project_id == project_id,
+        ProjectMember.deleted_at.is_(None),
+        User.deleted_at.is_(None),
+    ]
+    if role:
+        filters.append(ProjectMember.member_role == role)
+    if search_pattern:
+        filters.append(
+            or_(
+                func.lower(User.full_name).like(search_pattern),
+                func.lower(User.email).like(search_pattern),
+            )
+        )
+
+    sort_map = {
+        "created_at": ProjectMember.created_at,
+        "full_name": User.full_name,
+        "email": User.email,
+        "member_role": ProjectMember.member_role,
+    }
+    sort_column = sort_map[sort_by]
+    order_by = sort_column.asc() if sort_order == "asc" else sort_column.desc()
+
+    total_stmt = (
+        select(func.count())
+        .select_from(ProjectMember)
+        .join(User, User.id == ProjectMember.user_id)
+        .where(*filters)
+    )
+    total = await db.scalar(total_stmt)
+    total_count = int(total or 0)
+
+    offset = (page - 1) * items_per_page
+    rows_stmt = (
+        select(ProjectMember, User, Media.file_url)
+        .join(User, User.id == ProjectMember.user_id)
+        .outerjoin(
+            Media,
+            and_(
+                Media.id == User.avatar_media_id,
+                Media.deleted_at.is_(None),
+            ),
+        )
+        .where(*filters)
+        .order_by(order_by)
+        .offset(offset)
+        .limit(items_per_page)
+    )
+    rows = (await db.execute(rows_stmt)).all()
+
+    data = [
+        ProjectMemberListItem(
+            **ProjectMemberRead.model_validate(member).model_dump(),
+            user_email=user.email,
+            user_full_name=user.full_name,
+            user_avatar_url=avatar_url,
+        )
+        for member, user, avatar_url in rows
+    ]
+
+    total_pages = (total_count + items_per_page - 1) // items_per_page if total_count > 0 else 0
+    return ProjectMemberListResponse(
+        data=data,
+        total=total_count,
+        page=page,
+        items_per_page=items_per_page,
+        total_pages=total_pages,
+    )
 
 
 @router.delete("/{project_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

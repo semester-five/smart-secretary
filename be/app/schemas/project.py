@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class ProjectCreate(BaseModel):
@@ -35,8 +35,8 @@ class ProjectRead(BaseModel):
 
 
 class ProjectMemberCreate(BaseModel):
-    user_id: uuid.UUID
-    member_role: Literal["owner", "editor", "viewer"] = "viewer"
+    email: EmailStr
+    member_role: Literal["editor", "viewer"] = "viewer"
 
 
 class ProjectMemberRead(BaseModel):
@@ -48,6 +48,20 @@ class ProjectMemberRead(BaseModel):
     member_role: str
     created_at: datetime
     updated_at: datetime
+
+
+class ProjectMemberListItem(ProjectMemberRead):
+    user_email: EmailStr
+    user_full_name: str
+    user_avatar_url: str | None = None
+
+
+class ProjectMemberListResponse(BaseModel):
+    data: list[ProjectMemberListItem]
+    total: int
+    page: int
+    items_per_page: int
+    total_pages: int
 
 
 class MeetingRead(BaseModel):

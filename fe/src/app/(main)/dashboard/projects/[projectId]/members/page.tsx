@@ -1,31 +1,31 @@
 import Link from "next/link";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProjectByIdAction, listUsersAction } from "@/server/api-actions";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { getProjectByIdAction } from "@/server/api-actions";
 
 import { ManageMembersForm } from "../../_components/manage-members-form";
 
 export default async function ProjectMembersPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
 
-  const [project, usersResponse] = await Promise.all([
-    getProjectByIdAction(projectId).catch(() => null),
-    listUsersAction(1, 200).catch(() => ({ data: [] })),
-  ]);
+  const project = await getProjectByIdAction(projectId).catch(() => null);
 
   if (!project) {
     return (
-      <div className="space-y-4">
-        <h1 className="font-semibold text-2xl">Members</h1>
-        <p className="text-muted-foreground text-sm">Project not found or no permission.</p>
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ShieldAlert className="size-6 text-destructive" />
+          </EmptyMedia>
+          <EmptyTitle>Project unavailable</EmptyTitle>
+          <EmptyDescription>Project not found or you don't have permission to view its members.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
-
-  const users = usersResponse.data ?? [];
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
       <div className="mb-2">
@@ -48,10 +48,10 @@ export default async function ProjectMembersPage({ params }: { params: Promise<{
       <Card>
         <CardHeader>
           <CardTitle>Manage membership</CardTitle>
-          <CardDescription>Add and remove teammates from this workspace.</CardDescription>
+          <CardDescription>Search, add, and remove project members.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ManageMembersForm projectId={project.id} users={users} />
+          <ManageMembersForm projectId={project.id} />
         </CardContent>
       </Card>
     </div>
