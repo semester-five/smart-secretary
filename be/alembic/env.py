@@ -8,6 +8,7 @@ from app.core.database import Base
 
 # Import all models so Alembic detects them
 import app.models.media  # noqa: F401
+import app.models.project  # noqa: F401
 import app.models.user  # noqa: F401
 
 config = context.config

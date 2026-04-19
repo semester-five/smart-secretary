@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, status
@@ -34,13 +35,18 @@ async def get_current_user(
     if not payload or payload.get("type") != "access":
         raise credentials_exception
 
-    user_id: str | None = payload.get("sub")
-    if user_id is None:
+    user_id_raw: str | None = payload.get("sub")
+    if user_id_raw is None:
+        raise credentials_exception
+
+    try:
+        user_id = uuid.UUID(user_id_raw)
+    except ValueError:
         raise credentials_exception
 
     user = await user_crud.get(
         db,
-        id=int(user_id),
+        id=user_id,
         schema_to_select=UserRead,
         return_as_model=True,
     )
@@ -64,13 +70,18 @@ async def get_current_user_from_refresh(
     if not payload or payload.get("type") != "refresh":
         raise credentials_exception
 
-    user_id: str | None = payload.get("sub")
-    if user_id is None:
+    user_id_raw: str | None = payload.get("sub")
+    if user_id_raw is None:
+        raise credentials_exception
+
+    try:
+        user_id = uuid.UUID(user_id_raw)
+    except ValueError:
         raise credentials_exception
 
     user = await user_crud.get(
         db,
-        id=int(user_id),
+        id=user_id,
         schema_to_select=UserRead,
         return_as_model=True,
     )

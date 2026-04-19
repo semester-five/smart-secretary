@@ -30,7 +30,7 @@ class MediaCreate(BaseModel):
     file_size: int
     media_type: str
     mime_type: str
-    user_id: int
+    user_id: uuid.UUID
 
 
 class MediaUpdate(BaseModel):
@@ -47,6 +47,6 @@ class MediaRead(BaseModel):
     file_size: int
     media_type: str
     mime_type: str
-    user_id: int
+    user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime

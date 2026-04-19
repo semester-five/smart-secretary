@@ -1,3 +1,6 @@
+import uuid
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +17,7 @@ from app.crud.user import user_crud
 from app.models.user import User
 from app.schemas.auth import LoginRequest
 from app.schemas.token import Token
-from app.schemas.user import UserAuthRead, UserCreate, UserCreateInternal, UserRead
+from app.schemas.user import UserAuthRead, UserCreate, UserCreateInternal, UserRead, UserUpdateInternal
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,7 +36,7 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
     )
 
 
-def _build_token_response(user_id: int) -> Token:
+def _build_token_response(user_id: uuid.UUID) -> Token:
     return Token(
         access_token=create_access_token(str(user_id)),
         refresh_token=create_refresh_token(str(user_id)),
@@ -62,6 +65,8 @@ async def register(
         object=UserCreateInternal(
             email=payload.email,
             username=payload.username,
+            full_name=payload.full_name or payload.username,
+            status=payload.status,
             hashed_password=hash_password(payload.password),
         ),
     )
@@ -76,7 +81,7 @@ async def login(
 ) -> Token:
     user = await user_crud.get(
         db,
-        email=payload.username,
+        email=payload.email,
         schema_to_select=UserAuthRead,
         return_as_model=True,
     )
@@ -91,6 +96,12 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user",
         )
+
+    await user_crud.update(
+        db,
+        object=UserUpdateInternal(last_login_at=datetime.now(UTC)),
+        id=user.id,
+    )
 
     token_response = _build_token_response(user.id)
     _set_refresh_cookie(response, token_response.refresh_token)
