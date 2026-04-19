@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -88,7 +89,7 @@ export function CreateProjectForm() {
       <div className="grid gap-3 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
         <div className="space-y-1">
           <span className="font-medium text-sm">Status</span>
-          <Select value={status} onValueChange={(value) => setStatus(value as "active" | "archived") }>
+          <Select value={status} onValueChange={(value) => setStatus(value as "active" | "archived")}>
             <SelectTrigger>
               <SelectValue placeholder="Choose status" />
             </SelectTrigger>
@@ -98,9 +99,16 @@ export function CreateProjectForm() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Button type="button" disabled={isPending} onClick={submit}>
-            {isPending ? "Creating..." : "Create project"}
+        <div className="flex justify-end">
+          <Button type="button" disabled={isPending} onClick={submit} className="w-full sm:w-auto">
+            {isPending ? (
+              "Creating..."
+            ) : (
+              <>
+                <Plus className="mr-2 size-4" />
+                Create project
+              </>
+            )}
           </Button>
         </div>
       </div>

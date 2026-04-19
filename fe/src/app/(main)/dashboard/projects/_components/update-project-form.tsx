@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ImagePlus, Save, Trash2 } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -24,6 +25,7 @@ export function UpdateProjectForm({ project }: { project: Project }) {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(project.cover_image_url);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (removeCover) {
@@ -140,24 +142,50 @@ export function UpdateProjectForm({ project }: { project: Project }) {
         />
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="project-cover" className="font-medium text-sm">
-          Cover image
-        </label>
+      <div className="space-y-3">
+        <span className="font-medium text-sm">Cover image</span>
         {coverPreviewUrl ? (
-          <>
+          <div className="group relative overflow-hidden rounded-md border shadow-sm">
             {/* biome-ignore lint/performance/noImgElement: Cover previews can use dynamic blob/runtime storage URLs. */}
-            <img src={coverPreviewUrl} alt="Project cover preview" className="aspect-video w-full rounded-md border object-cover" />
-          </>
-        ) : (
-          <div className="flex aspect-video items-center justify-center rounded-md border border-dashed text-muted-foreground text-sm">
-            No cover image
+            <img
+              src={coverPreviewUrl}
+              alt="Project cover preview"
+              className="aspect-video w-full rounded-md object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                <ImagePlus className="mr-2 size-4" /> Change Image
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  setCoverFile(null);
+                  setRemoveCover(true);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
           </div>
+        ) : (
+          <button
+            type="button"
+            className="flex aspect-video w-full flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 transition-colors hover:bg-muted/40"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImagePlus className="mb-2 size-8 text-muted-foreground/60" />
+            <span className="font-medium text-muted-foreground text-sm">Click to upload cover image</span>
+            <span className="mt-1 text-muted-foreground text-xs">JPG, PNG or WEBP (Max 5MB)</span>
+          </button>
         )}
         <Input
           id="project-cover"
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          ref={fileInputRef}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (!file) {
@@ -173,25 +201,15 @@ export function UpdateProjectForm({ project }: { project: Project }) {
             setRemoveCover(false);
           }}
         />
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setCoverFile(null);
-              setRemoveCover(true);
-            }}
-          >
-            Remove cover
-          </Button>
-        </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
         <div className="space-y-1">
-          <span className="font-medium text-sm">Status</span>
-          <Select value={status} onValueChange={(value) => setStatus(value as "active" | "archived") }>
-            <SelectTrigger>
+          <label htmlFor="project-status" className="font-medium text-sm">
+            Status
+          </label>
+          <Select value={status} onValueChange={(value) => setStatus(value as "active" | "archived")}>
+            <SelectTrigger id="project-status">
               <SelectValue placeholder="Choose status" />
             </SelectTrigger>
             <SelectContent>
@@ -200,9 +218,16 @@ export function UpdateProjectForm({ project }: { project: Project }) {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Button type="button" disabled={isPending} onClick={submit}>
-            {isPending ? "Saving..." : "Save changes"}
+        <div className="flex justify-end pt-2">
+          <Button type="button" disabled={isPending} onClick={submit} className="w-full sm:w-auto">
+            {isPending ? (
+              "Saving..."
+            ) : (
+              <>
+                <Save className="mr-2 size-4" />
+                Save changes
+              </>
+            )}
           </Button>
         </div>
       </div>

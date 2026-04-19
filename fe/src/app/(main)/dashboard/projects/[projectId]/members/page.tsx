@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectByIdAction, listUsersAction } from "@/server/api-actions";
+import { ArrowLeft } from "lucide-react";
 
 import { ManageMembersForm } from "../../_components/manage-members-form";
 
@@ -25,23 +26,28 @@ export default async function ProjectMembersPage({ params }: { params: Promise<{
   const users = usersResponse.data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
+      <div className="mb-2">
+        <Link
+          href={`/dashboard/projects/${project.id}`}
+          className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 size-4" />
+          Back to configuration
+        </Link>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-semibold text-2xl">Project Members</h1>
-          <p className="text-muted-foreground text-sm">{project.name}</p>
+          <h1 className="font-semibold text-2xl tracking-tight">Project Members</h1>
+          <p className="text-muted-foreground text-sm mt-1">{project.name}</p>
         </div>
-        <Link href={`/dashboard/projects/${project.id}`} className="text-primary text-sm hover:underline">
-          Back to project
-        </Link>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Manage membership</CardTitle>
-          <CardDescription>
-            Add and remove members with available APIs. Member list endpoint is not available yet.
-          </CardDescription>
+          <CardDescription>Add and remove teammates from this workspace.</CardDescription>
         </CardHeader>
         <CardContent>
           <ManageMembersForm projectId={project.id} users={users} />

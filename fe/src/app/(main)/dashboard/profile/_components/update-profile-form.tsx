@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Save, Trash2, Upload } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -26,6 +27,7 @@ export function UpdateProfileForm({ currentUser }: { currentUser: CurrentUser })
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(currentUser.avatar_url);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (removeAvatar) {
@@ -113,16 +115,18 @@ export function UpdateProfileForm({ currentUser }: { currentUser: CurrentUser })
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Avatar className="size-16">
-          <AvatarImage src={avatarPreviewUrl ?? undefined} alt={currentUser.username} />
-          <AvatarFallback>{getInitials(currentUser.username)}</AvatarFallback>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <Avatar className="size-20 border shadow-sm">
+          <AvatarImage src={avatarPreviewUrl ?? undefined} alt={currentUser.username} className="object-cover" />
+          <AvatarFallback className="text-lg">{getInitials(currentUser.username)}</AvatarFallback>
         </Avatar>
-        <div className="w-full space-y-2">
+        <div className="flex w-full items-center gap-2">
           <Input
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            ref={fileInputRef}
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (!file) {
@@ -140,29 +144,46 @@ export function UpdateProfileForm({ currentUser }: { currentUser: CurrentUser })
               setRemoveAvatar(false);
             }}
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setAvatarFile(null);
-              setRemoveAvatar(true);
-            }}
-          >
-            Remove avatar
+          <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="mr-2 size-4" />
+            Upload new
           </Button>
+          {(avatarPreviewUrl || avatarFile) && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => {
+                setAvatarFile(null);
+                setRemoveAvatar(true);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-2">
         <label htmlFor="full-name" className="font-medium text-sm">
           Full name
         </label>
         <Input id="full-name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
       </div>
 
-      <Button type="button" disabled={isPending} onClick={submit}>
-        {isPending ? "Saving..." : "Save profile"}
-      </Button>
+      <div className="flex justify-end pt-2">
+        <Button type="button" disabled={isPending} onClick={submit} className="w-full sm:w-auto">
+          {isPending ? (
+            "Saving..."
+          ) : (
+            <>
+              <Save className="mr-2 size-4" />
+              Save changes
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

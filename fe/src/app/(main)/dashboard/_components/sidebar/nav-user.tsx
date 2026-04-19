@@ -73,8 +73,8 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/profile">
-                <CircleUser />
-                Account
+                  <CircleUser />
+                  Account
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>

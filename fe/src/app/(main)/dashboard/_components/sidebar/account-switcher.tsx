@@ -60,8 +60,8 @@ export function AccountSwitcher({
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/dashboard/profile">
-            <BadgeCheck />
-            Account
+              <BadgeCheck />
+              Account
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>

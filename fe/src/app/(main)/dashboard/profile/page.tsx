@@ -13,16 +13,16 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
       <div>
         <h1 className="font-semibold text-2xl">Profile</h1>
         <p className="text-muted-foreground text-sm">Manage your display name and avatar.</p>
       </div>
 
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Account details</CardTitle>
-          <CardDescription>PATCH /api/v1/users/me</CardDescription>
+          <CardDescription>Update your personal information</CardDescription>
         </CardHeader>
         <CardContent>
           <UpdateProfileForm currentUser={currentUser} />

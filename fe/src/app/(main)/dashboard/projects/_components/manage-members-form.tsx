@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2, UserPlus } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -11,13 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { CurrentUser } from "@/server/api-actions";
 import { addProjectMemberAction, removeProjectMemberAction } from "@/server/api-actions";
 
-export function ManageMembersForm({
-  projectId,
-  users,
-}: {
-  projectId: string;
-  users: CurrentUser[];
-}) {
+export function ManageMembersForm({ projectId, users }: { projectId: string; users: CurrentUser[] }) {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [manualAddUserId, setManualAddUserId] = useState("");
   const [memberRole, setMemberRole] = useState<"owner" | "editor" | "viewer">("viewer");
@@ -25,10 +20,7 @@ export function ManageMembersForm({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const sortedUsers = useMemo(
-    () => [...users].sort((a, b) => a.username.localeCompare(b.username)),
-    [users],
-  );
+  const sortedUsers = useMemo(() => [...users].sort((a, b) => a.username.localeCompare(b.username)), [users]);
 
   const addMember = () => {
     const userId = selectedUserId || manualAddUserId.trim();
@@ -74,9 +66,12 @@ export function ManageMembersForm({
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-3 rounded-lg border p-4">
-        <h3 className="font-medium">Add member</h3>
-        <div className="space-y-1">
+      <div className="flex flex-col space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+        <h3 className="font-semibold text-lg flex items-center gap-2">
+          <UserPlus className="size-5 text-primary" />
+          Add member
+        </h3>
+        <div className="space-y-2">
           <span className="font-medium text-sm">User</span>
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
             <SelectTrigger>
@@ -93,7 +88,7 @@ export function ManageMembersForm({
           <p className="text-muted-foreground text-xs">If user list is empty, enter user ID manually below.</p>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="manual-add-user-id" className="font-medium text-sm">
             User ID (manual)
           </label>
@@ -105,10 +100,12 @@ export function ManageMembersForm({
           />
         </div>
 
-        <div className="space-y-1">
-          <span className="font-medium text-sm">Role</span>
+        <div className="space-y-2 flex-1">
+          <label htmlFor="member-role" className="font-medium text-sm">
+            Role
+          </label>
           <Select value={memberRole} onValueChange={(value) => setMemberRole(value as "owner" | "editor" | "viewer")}>
-            <SelectTrigger>
+            <SelectTrigger id="member-role">
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
@@ -119,17 +116,20 @@ export function ManageMembersForm({
           </Select>
         </div>
 
-        <Button type="button" disabled={isPending} onClick={addMember}>
+        <Button type="button" disabled={isPending} onClick={addMember} className="w-full">
           {isPending ? "Adding..." : "Add member"}
         </Button>
       </div>
 
-      <div className="space-y-3 rounded-lg border p-4">
-        <h3 className="font-medium">Remove member</h3>
+      <div className="flex flex-col space-y-4 rounded-xl border bg-card p-5 shadow-sm">
+        <h3 className="font-semibold text-lg flex items-center gap-2 text-destructive">
+          <Trash2 className="size-5" />
+          Remove member
+        </h3>
         <p className="text-muted-foreground text-sm">
           Current backend provides remove-by-user-id API only. Paste the member user ID below.
         </p>
-        <div className="space-y-1">
+        <div className="space-y-2 flex-1">
           <label htmlFor="remove-user-id" className="font-medium text-sm">
             User ID
           </label>
@@ -140,7 +140,7 @@ export function ManageMembersForm({
             placeholder="f9c0..."
           />
         </div>
-        <Button type="button" variant="destructive" disabled={isPending} onClick={removeMember}>
+        <Button type="button" variant="destructive" disabled={isPending} onClick={removeMember} className="w-full">
           {isPending ? "Removing..." : "Remove member"}
         </Button>
       </div>

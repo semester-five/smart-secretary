@@ -34,6 +34,16 @@ export const sidebarItems: NavGroup[] = [
         title: "Projects",
         url: "/dashboard/projects",
         icon: FolderKanban,
+        subItems: [
+          {
+            title: "All Projects",
+            url: "/dashboard/projects",
+          },
+          {
+            title: "Create Project",
+            url: "/dashboard/projects/create",
+          },
+        ],
       },
       {
         title: "Profile",

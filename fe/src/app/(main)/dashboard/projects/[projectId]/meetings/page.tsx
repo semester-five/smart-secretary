@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { ArrowLeft, Calendar, CalendarX } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectByIdAction, listProjectMeetingsAction } from "@/server/api-actions";
+
+export const metadata = {
+  title: "Meetings - Smart Secretary",
+};
 
 export default async function ProjectMeetingsPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -22,40 +27,56 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-2xl">Meetings</h1>
-          <p className="text-muted-foreground text-sm">{project.name}</p>
-        </div>
-        <Link href={`/dashboard/projects/${project.id}`} className="text-primary text-sm hover:underline">
-          Back to project
+    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
+      <div className="mb-2">
+        <Link
+          href={`/dashboard/projects/${project.id}`}
+          className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 size-4" />
+          Back to configuration
         </Link>
       </div>
 
-      <Card>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-semibold text-2xl tracking-tight">Meetings</h1>
+          <p className="text-muted-foreground text-sm mt-1">{project.name}</p>
+        </div>
+      </div>
+
+      <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>Meeting timeline</CardTitle>
-          <CardDescription>GET /api/v1/projects/{'{projectId}'}/meetings</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="size-5" />
+            Meeting timeline
+          </CardTitle>
+          <CardDescription>View upcoming and past meetings scheduled for this project.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {meetings.length > 0 ? (
             meetings.map((meeting) => (
-              <div key={meeting.id} className="rounded-lg border p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{meeting.title}</p>
-                    <p className="text-muted-foreground text-xs">{new Date(meeting.meeting_date).toLocaleString()}</p>
+              <div key={meeting.id} className="rounded-lg border bg-muted/20 p-4 transition-colors hover:bg-muted/40">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="font-semibold">{meeting.title}</p>
+                    <p className="text-muted-foreground text-sm flex items-center gap-1.5">
+                      <Calendar className="size-3.5" />
+                      {new Date(meeting.meeting_date).toLocaleString()}
+                    </p>
                   </div>
-                  <Badge variant="outline">{meeting.status}</Badge>
+                  <Badge variant={meeting.status === "scheduled" ? "default" : "secondary"}>{meeting.status}</Badge>
                 </div>
               </div>
             ))
           ) : (
-            <div className="rounded-lg border border-dashed p-6 text-center">
-              <p className="font-medium text-sm">No meetings yet</p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                Meeting create/edit APIs are not available yet, so this page is read-only for now.
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center animate-in fade-in zoom-in-95">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted mb-4">
+                <CalendarX className="size-6 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-base">No meetings yet</p>
+              <p className="max-w-sm mt-1 text-muted-foreground text-sm">
+                There are no scheduled meetings for this project. Creating new meetings will be supported soon.
               </p>
             </div>
           )}
