@@ -30,7 +30,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
           id: String(currentUser.id),
           name: currentUser.username,
           email: currentUser.email,
-          avatar: "",
+          avatar: currentUser.avatar_url ?? "",
           role: currentUser.is_superuser ? "superuser" : "member",
         },
       ]

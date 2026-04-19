@@ -19,6 +19,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
+      {project.cover_image_url ? (
+        <div className="overflow-hidden rounded-lg border">
+          {/* biome-ignore lint/performance/noImgElement: Cover images come from runtime-configured storage hostnames. */}
+          <img
+            src={project.cover_image_url}
+            alt={`${project.name} cover`}
+            className="aspect-video w-full object-cover"
+          />
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-semibold text-2xl">{project.name}</h1>

@@ -43,6 +43,7 @@ class UserUpdate(BaseModel):
     status: Literal["active", "inactive", "suspended"] | None = None
     password: str | None = None
     is_active: bool | None = None
+    avatar_media_id: uuid.UUID | None = None
 
     @field_validator("password")
     @classmethod
@@ -57,8 +58,13 @@ class UserRead(UserBase):
 
     id: uuid.UUID
     last_login_at: datetime | None = None
+    avatar_media_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class UserReadWithAvatar(UserRead):
+    avatar_url: str | None = None
 
 
 class UserAuthRead(UserRead):
@@ -73,3 +79,4 @@ class UserUpdateInternal(BaseModel):
     hashed_password: str | None = None
     last_login_at: datetime | None = None
     is_active: bool | None = None
+    avatar_media_id: uuid.UUID | None = None

@@ -39,6 +39,16 @@ export default async function ProjectsPage() {
                 href={`/dashboard/projects/${project.id}`}
                 className="block rounded-lg border p-4 transition-colors hover:bg-muted/40"
               >
+                {project.cover_image_url ? (
+                  <>
+                    {/* biome-ignore lint/performance/noImgElement: Cover images come from runtime-configured storage hostnames. */}
+                    <img
+                      src={project.cover_image_url}
+                      alt={`${project.name} cover`}
+                      className="mb-3 aspect-video w-full rounded-md object-cover"
+                    />
+                  </>
+                ) : null}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{project.name}</p>

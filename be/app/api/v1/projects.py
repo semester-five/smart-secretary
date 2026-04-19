@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import CurrentUser
+from app.models.media import Media
 from app.models.project import Meeting, Project, ProjectMember
 from app.models.user import User
 from app.schemas.project import (
@@ -19,6 +20,37 @@ from app.schemas.project import (
 )
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+
+
+async def _get_image_media_or_404(db: AsyncSession, media_id: uuid.UUID) -> Media:
+    media = await db.scalar(
+        select(Media).where(Media.id == media_id, Media.deleted_at.is_(None))
+    )
+    if media is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media not found")
+    if media.media_type != "image":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cover media must be an image",
+        )
+    return media
+
+
+async def _resolve_cover_image_url(
+    db: AsyncSession,
+    cover_image_media_id: uuid.UUID | None,
+) -> str | None:
+    if cover_image_media_id is None:
+        return None
+    media = await db.scalar(
+        select(Media).where(Media.id == cover_image_media_id, Media.deleted_at.is_(None))
+    )
+    return media.file_url if media else None
+
+
+async def _serialize_project(db: AsyncSession, project: Project) -> ProjectRead:
+    cover_image_url = await _resolve_cover_image_url(db, project.cover_image_media_id)
+    return ProjectRead.model_validate(project).model_copy(update={"cover_image_url": cover_image_url})
 
 
 async def _get_project_or_404(db: AsyncSession, project_id: uuid.UUID) -> Project:
@@ -55,6 +87,27 @@ async def _ensure_project_admin(db: AsyncSession, project: Project, current_user
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
 
+async def _ensure_project_cover_editor(
+    db: AsyncSession,
+    project: Project,
+    current_user: User,
+) -> None:
+    if current_user.is_superuser or project.owner_id == current_user.id:
+        return
+
+    role = await db.scalar(
+        select(ProjectMember.member_role).where(
+            ProjectMember.project_id == project.id,
+            ProjectMember.user_id == current_user.id,
+            ProjectMember.deleted_at.is_(None),
+        )
+    )
+    if role in {"owner", "editor"}:
+        return
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+
+
 @router.get("", response_model=list[ProjectRead])
 async def list_projects(
     current_user: CurrentUser,
@@ -76,7 +129,7 @@ async def list_projects(
         )
 
     projects = (await db.scalars(stmt.order_by(Project.created_at.desc()))).all()
-    return [ProjectRead.model_validate(project) for project in projects]
+    return [await _serialize_project(db, project) for project in projects]
 
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
@@ -119,7 +172,7 @@ async def create_project(
     )
     await db.commit()
     await db.refresh(project)
-    return ProjectRead.model_validate(project)
+    return await _serialize_project(db, project)
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
@@ -130,7 +183,7 @@ async def get_project(
 ) -> ProjectRead:
     project = await _get_project_or_404(db, project_id)
     await _ensure_project_access(db, project, current_user)
-    return ProjectRead.model_validate(project)
+    return await _serialize_project(db, project)
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
@@ -141,9 +194,28 @@ async def update_project(
     db: AsyncSession = Depends(get_db),
 ) -> ProjectRead:
     project = await _get_project_or_404(db, project_id)
-    await _ensure_project_admin(db, project, current_user)
 
     update_data = payload.model_dump(exclude_unset=True)
+    non_cover_updates = {
+        field_name: field_value
+        for field_name, field_value in update_data.items()
+        if field_name != "cover_image_media_id"
+    }
+
+    if non_cover_updates:
+        await _ensure_project_admin(db, project, current_user)
+
+    if "cover_image_media_id" in update_data:
+        await _ensure_project_cover_editor(db, project, current_user)
+        cover_image_media_id = update_data["cover_image_media_id"]
+        if cover_image_media_id is not None:
+            media = await _get_image_media_or_404(db, cover_image_media_id)
+            if media.user_id != current_user.id and not current_user.is_superuser:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not enough permissions",
+                )
+
     for field_name, field_value in update_data.items():
         setattr(project, field_name, field_value)
 
@@ -152,7 +224,7 @@ async def update_project(
 
     await db.commit()
     await db.refresh(project)
-    return ProjectRead.model_validate(project)
+    return await _serialize_project(db, project)
 
 
 @router.get("/{project_id}/meetings", response_model=list[MeetingRead])

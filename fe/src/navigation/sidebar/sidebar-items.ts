@@ -1,4 +1,4 @@
-import { FolderKanban, type LucideIcon, Users } from "lucide-react";
+import { CircleUser, FolderKanban, type LucideIcon, Users } from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -34,6 +34,11 @@ export const sidebarItems: NavGroup[] = [
         title: "Projects",
         url: "/dashboard/projects",
         icon: FolderKanban,
+      },
+      {
+        title: "Profile",
+        url: "/dashboard/profile",
+        icon: CircleUser,
       },
       {
         title: "Users",

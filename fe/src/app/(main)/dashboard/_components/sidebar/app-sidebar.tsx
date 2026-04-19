@@ -113,7 +113,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             user={{
               name: user.username,
               email: user.email,
-              avatar: "",
+              avatar: user.avatar_url ?? "",
             }}
           />
         ) : null}

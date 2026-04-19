@@ -16,6 +16,7 @@ class ProjectUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     status: Literal["active", "archived"] | None = None
+    cover_image_media_id: uuid.UUID | None = None
 
 
 class ProjectRead(BaseModel):
@@ -27,6 +28,8 @@ class ProjectRead(BaseModel):
     description: str | None
     owner_id: uuid.UUID
     status: str
+    cover_image_media_id: uuid.UUID | None = None
+    cover_image_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
