@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 
 import { CircleHelp, ClipboardList, Command, Database, File, Search, Settings } from "lucide-react";
@@ -75,6 +76,16 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
 
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
+  const visibleSidebarItems = useMemo(
+    () =>
+      sidebarItems
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => item.title !== "Users" || Boolean(user?.is_superuser)),
+        }))
+        .filter((group) => group.items.length > 0),
+    [user?.is_superuser],
+  );
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
@@ -91,7 +102,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={visibleSidebarItems} />
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

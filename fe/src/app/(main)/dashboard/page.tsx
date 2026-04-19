@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUserAction, healthCheckAction, listUsersAction } from "@/server/api-actions";
@@ -55,6 +57,27 @@ export default async function Page() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workspace</CardTitle>
+          <CardDescription>US-02 routes currently implemented</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <Link href="/dashboard/projects" className="rounded-lg border p-4 hover:bg-muted/40">
+            <p className="font-medium">Projects</p>
+            <p className="text-muted-foreground text-xs">List, create and update projects</p>
+          </Link>
+          <Link href="/dashboard/projects" className="rounded-lg border p-4 hover:bg-muted/40">
+            <p className="font-medium">Members</p>
+            <p className="text-muted-foreground text-xs">Manage project membership from project detail</p>
+          </Link>
+          <Link href="/dashboard/projects" className="rounded-lg border p-4 hover:bg-muted/40">
+            <p className="font-medium">Meetings</p>
+            <p className="text-muted-foreground text-xs">Read-only meeting timeline per project</p>
+          </Link>
+        </CardContent>
+      </Card>
 
       {currentUser?.is_superuser ? (
         <Card>

@@ -3,16 +3,23 @@
 import { apiRequest } from "@/server/api-client";
 
 export type CurrentUser = {
-    id: number;
+    id: string;
     email: string;
     username: string;
+    full_name: string;
+    status: "active" | "inactive" | "suspended";
+    last_login_at: string | null;
     is_active: boolean;
     is_superuser: boolean;
+    created_at: string;
+    updated_at: string;
 };
 
 export type UpdateCurrentUserPayload = {
     email?: string;
     username?: string;
+    full_name?: string;
+    status?: "active" | "inactive" | "suspended";
     password?: string;
     is_active?: boolean;
 };
@@ -51,7 +58,55 @@ export type Media = {
     file_size: number;
     media_type: string;
     mime_type: string;
-    user_id: number;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+};
+
+export type Project = {
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    owner_id: string;
+    status: "active" | "archived";
+    created_at: string;
+    updated_at: string;
+};
+
+export type ProjectCreatePayload = {
+    code: string;
+    name: string;
+    description?: string;
+    status?: "active" | "archived";
+};
+
+export type ProjectUpdatePayload = {
+    name?: string;
+    description?: string;
+    status?: "active" | "archived";
+};
+
+export type ProjectMember = {
+    id: string;
+    project_id: string;
+    user_id: string;
+    member_role: "owner" | "editor" | "viewer";
+    created_at: string;
+    updated_at: string;
+};
+
+export type ProjectMemberCreatePayload = {
+    user_id: string;
+    member_role?: "owner" | "editor" | "viewer";
+};
+
+export type Meeting = {
+    id: string;
+    project_id: string;
+    title: string;
+    meeting_date: string;
+    status: string;
     created_at: string;
     updated_at: string;
 };
@@ -91,4 +146,46 @@ export async function getMediaByIdAction(mediaId: string): Promise<Media> {
 
 export async function healthCheckAction(): Promise<{ status: string }> {
     return apiRequest<{ status: string }>("/health");
+}
+
+export async function listProjectsAction(): Promise<Project[]> {
+    return apiRequest<Project[]>("/api/v1/projects");
+}
+
+export async function createProjectAction(payload: ProjectCreatePayload): Promise<Project> {
+    return apiRequest<Project>("/api/v1/projects", {
+        method: "POST",
+        body: payload,
+    });
+}
+
+export async function getProjectByIdAction(projectId: string): Promise<Project> {
+    return apiRequest<Project>(`/api/v1/projects/${projectId}`);
+}
+
+export async function updateProjectAction(projectId: string, payload: ProjectUpdatePayload): Promise<Project> {
+    return apiRequest<Project>(`/api/v1/projects/${projectId}`, {
+        method: "PATCH",
+        body: payload,
+    });
+}
+
+export async function listProjectMeetingsAction(projectId: string): Promise<Meeting[]> {
+    return apiRequest<Meeting[]>(`/api/v1/projects/${projectId}/meetings`);
+}
+
+export async function addProjectMemberAction(
+    projectId: string,
+    payload: ProjectMemberCreatePayload,
+): Promise<ProjectMember> {
+    return apiRequest<ProjectMember>(`/api/v1/projects/${projectId}/members`, {
+        method: "POST",
+        body: payload,
+    });
+}
+
+export async function removeProjectMemberAction(projectId: string, userId: string): Promise<void> {
+    await apiRequest<void>(`/api/v1/projects/${projectId}/members/${userId}`, {
+        method: "DELETE",
+    });
 }

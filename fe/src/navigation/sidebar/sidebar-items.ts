@@ -1,4 +1,4 @@
-import { Calendar, Fingerprint, type LucideIcon, Mail, MessageSquare, Users } from "lucide-react";
+import { FolderKanban, type LucideIcon, Users } from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -28,42 +28,17 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "Pages",
+    label: "Workspace",
     items: [
       {
-        title: "Calendar",
-        url: "/dashboard/calendar",
-        icon: Calendar,
-        comingSoon: true,
-      },
-      {
-        title: "Email",
-        url: "/dashboard/email",
-        icon: Mail,
-        comingSoon: true,
-      },
-      {
-        title: "Chat",
-        url: "/dashboard/chat",
-        icon: MessageSquare,
-        comingSoon: true,
+        title: "Projects",
+        url: "/dashboard/projects",
+        icon: FolderKanban,
       },
       {
         title: "Users",
         url: "/dashboard/users",
         icon: Users,
-        comingSoon: true,
-      },
-      {
-        title: "Authentication",
-        url: "/auth",
-        icon: Fingerprint,
-        subItems: [
-          { title: "Login v1", url: "/auth/v1/login", newTab: true },
-          { title: "Login v2", url: "/auth/v2/login", newTab: true },
-          { title: "Register v1", url: "/auth/v1/register", newTab: true },
-          { title: "Register v2", url: "/auth/v2/register", newTab: true },
-        ],
       },
     ],
   },
