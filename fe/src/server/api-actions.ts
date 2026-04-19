@@ -117,6 +117,52 @@ export type Meeting = {
   updated_at: string;
 };
 
+export type MeetingCreatePayload = {
+  project_id: string;
+  title: string;
+  meeting_date: string;
+};
+
+export type MeetingFile = {
+  id: string;
+  meeting_id: string;
+  file_name: string;
+  mime_type: string;
+  file_size_bytes: number;
+  storage_key: string;
+  file_url?: string | null;
+  duration_sec?: number | null;
+  checksum_sha256?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProcessingJob = {
+  id: string;
+  meeting_id: string;
+  job_type: string;
+  provider: string | null;
+  status: string;
+  progress: number;
+  started_at: string | null;
+  finished_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MeetingDetail = Meeting & {
+  files: MeetingFile[];
+};
+
+export type MeetingStatus = {
+  meeting_id: string;
+  meeting_status: string;
+  latest_job: ProcessingJob | null;
+  file_count: number;
+  updated_at: string;
+};
+
 export async function getCurrentUserAction(): Promise<CurrentUser> {
   return apiRequest<CurrentUser>("/api/v1/users/me");
 }
@@ -178,6 +224,37 @@ export async function updateProjectAction(projectId: string, payload: ProjectUpd
 
 export async function listProjectMeetingsAction(projectId: string): Promise<Meeting[]> {
   return apiRequest<Meeting[]>(`/api/v1/projects/${projectId}/meetings`);
+}
+
+export async function createMeetingAction(payload: MeetingCreatePayload): Promise<Meeting> {
+  return apiRequest<Meeting>("/api/v1/meetings", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function getMeetingByIdAction(meetingId: string): Promise<MeetingDetail> {
+  return apiRequest<MeetingDetail>(`/api/v1/meetings/${meetingId}`);
+}
+
+export async function uploadMeetingFileAction(meetingId: string, file: File): Promise<MeetingFile> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiRequest<MeetingFile>(`/api/v1/meetings/${meetingId}/files:upload`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export async function processMeetingAction(meetingId: string): Promise<MeetingStatus> {
+  return apiRequest<MeetingStatus>(`/api/v1/meetings/${meetingId}/process`, {
+    method: "POST",
+  });
+}
+
+export async function getMeetingStatusAction(meetingId: string): Promise<MeetingStatus> {
+  return apiRequest<MeetingStatus>(`/api/v1/meetings/${meetingId}/status`);
 }
 
 export async function addProjectMemberAction(

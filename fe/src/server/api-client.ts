@@ -82,17 +82,20 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}, 
   const headers: Record<string, string> = {
     ...(options.headers ?? {}),
   };
-  if (options.body !== undefined && !headers["Content-Type"]) {
+  const isFormData = options.body instanceof FormData;
+  if (options.body !== undefined && !isFormData && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
+  const body = isFormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined;
+
   const response = await fetch(`${API_URL}${path}`, {
     method: options.method ?? "GET",
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
     cache: "no-store",
   });
 

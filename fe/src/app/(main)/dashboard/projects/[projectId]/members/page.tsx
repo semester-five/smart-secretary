@@ -1,8 +1,9 @@
 import Link from "next/link";
 
+import { ArrowLeft } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectByIdAction, listUsersAction } from "@/server/api-actions";
-import { ArrowLeft } from "lucide-react";
 
 import { ManageMembersForm } from "../../_components/manage-members-form";
 

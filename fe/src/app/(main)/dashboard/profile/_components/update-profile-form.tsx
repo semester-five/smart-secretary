@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Save, Trash2, Upload } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
+import { Save, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,9 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getInitials } from "@/lib/utils";
 import {
+  type CurrentUser,
   confirmMediaUploadAction,
   createPresignedUrlAction,
-  type CurrentUser,
   updateCurrentUserAction,
 } from "@/server/api-actions";
 

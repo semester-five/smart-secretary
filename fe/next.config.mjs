@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactCompiler: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "200mb",
+    },
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },

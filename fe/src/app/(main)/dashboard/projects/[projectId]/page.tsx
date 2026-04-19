@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
 import { ArrowLeft, Calendar, Clock, User, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
