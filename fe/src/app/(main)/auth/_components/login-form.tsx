@@ -34,7 +34,7 @@ export function LoginForm() {
     const result = await loginAction(data.email, data.password);
     if (result.success) {
       toast.success("Welcome back! Redirecting to dashboard…");
-      router.push("/dashboard/default");
+      router.push("/dashboard");
     } else {
       toast.error(result.error);
     }

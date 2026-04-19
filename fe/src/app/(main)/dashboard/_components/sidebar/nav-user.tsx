@@ -1,5 +1,7 @@
 "use client";
 
+import { useTransition } from "react";
+
 import { CircleUser, CreditCard, EllipsisVertical, LogOut, MessageSquareDot } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { getInitials } from "@/lib/utils";
+import { logoutAction } from "@/server/auth-actions";
 
 export function NavUser({
   user,
@@ -25,6 +28,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const [isPending, startTransition] = useTransition();
 
   return (
     <SidebarMenu>
@@ -80,7 +84,14 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={isPending}
+              onClick={() => {
+                startTransition(() => {
+                  void logoutAction();
+                });
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

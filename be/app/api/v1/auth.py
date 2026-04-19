@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -13,6 +12,7 @@ from app.core.security import (
 )
 from app.crud.user import user_crud
 from app.models.user import User
+from app.schemas.auth import LoginRequest
 from app.schemas.token import Token
 from app.schemas.user import UserAuthRead, UserCreate, UserCreateInternal, UserRead
 
@@ -30,6 +30,13 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         samesite="lax",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         path="/api/v1/auth",
+    )
+
+
+def _build_token_response(user_id: int) -> Token:
+    return Token(
+        access_token=create_access_token(str(user_id)),
+        refresh_token=create_refresh_token(str(user_id)),
     )
 
 
@@ -64,16 +71,16 @@ async def register(
 @router.post("/login", response_model=Token)
 async def login(
     response: Response,
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    payload: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Token:
     user = await user_crud.get(
         db,
-        email=form_data.username,
+        email=payload.username,
         schema_to_select=UserAuthRead,
         return_as_model=True,
     )
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -85,10 +92,9 @@ async def login(
             detail="Inactive user",
         )
 
-    access_token = create_access_token(str(user.id))
-    refresh_token = create_refresh_token(str(user.id))
-    _set_refresh_cookie(response, refresh_token)
-    return Token(access_token=access_token)
+    token_response = _build_token_response(user.id)
+    _set_refresh_cookie(response, token_response.refresh_token)
+    return token_response
 
 
 @router.post("/refresh", response_model=Token)
@@ -96,10 +102,9 @@ async def refresh(
     response: Response,
     current_user: User = Depends(get_current_user_from_refresh),
 ) -> Token:
-    access_token = create_access_token(str(current_user.id))
-    new_refresh = create_refresh_token(str(current_user.id))
-    _set_refresh_cookie(response, new_refresh)
-    return Token(access_token=access_token)
+    token_response = _build_token_response(current_user.id)
+    _set_refresh_cookie(response, token_response.refresh_token)
+    return token_response
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
