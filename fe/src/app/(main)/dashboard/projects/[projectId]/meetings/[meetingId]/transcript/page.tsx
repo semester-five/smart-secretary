@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ArrowLeft, Captions } from "lucide-react";
+import { Captions } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,7 @@ export default async function TranscriptPage({
 }: {
   params: Promise<{ projectId: string; meetingId: string }>;
 }) {
-  const { projectId, meetingId } = await params;
+  const { meetingId } = await params;
 
   const [meeting, transcript] = await Promise.all([
     getMeetingByIdAction(meetingId).catch(() => null),
@@ -26,24 +25,7 @@ export default async function TranscriptPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="mb-2">
-        <Link
-          href={`/dashboard/projects/${projectId}/meetings/${meetingId}`}
-          className="inline-flex items-center font-medium text-muted-foreground text-sm transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 size-4" />
-          Back to meeting
-        </Link>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-2xl tracking-tight">Transcript</h1>
-          <p className="mt-1 text-muted-foreground text-sm">{meeting.title}</p>
-        </div>
-        <Badge variant="secondary">Version {transcript.version_no}</Badge>
-      </div>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       <Card>
         <CardHeader>

@@ -90,7 +90,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}, 
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const body = isFormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined;
+  const body = (isFormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined) as BodyInit | undefined;
 
   const response = await fetch(`${API_URL}${path}`, {
     method: options.method ?? "GET",

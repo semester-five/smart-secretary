@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ArrowLeft, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMeetingByIdAction, getMeetingSummaryAction } from "@/server/api-actions";
@@ -9,7 +8,7 @@ import { getMeetingByIdAction, getMeetingSummaryAction } from "@/server/api-acti
 import { SummaryClient } from "./summary-client";
 
 export default async function SummaryPage({ params }: { params: Promise<{ projectId: string; meetingId: string }> }) {
-  const { projectId, meetingId } = await params;
+  const { meetingId } = await params;
 
   const [meeting, summary] = await Promise.all([
     getMeetingByIdAction(meetingId).catch(() => null),
@@ -21,21 +20,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ projec
   }
 
   return (
-    <div className="space-y-6">
-      <div className="mb-2">
-        <Link
-          href={`/dashboard/projects/${projectId}/meetings/${meetingId}`}
-          className="inline-flex items-center font-medium text-muted-foreground text-sm transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 size-4" />
-          Back to meeting
-        </Link>
-      </div>
-
-      <div>
-        <h1 className="font-semibold text-2xl tracking-tight">Summary</h1>
-        <p className="mt-1 text-muted-foreground text-sm">{meeting.title}</p>
-      </div>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       <Card>
         <CardHeader>
