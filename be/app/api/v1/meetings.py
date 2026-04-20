@@ -4,13 +4,14 @@ from pathlib import Path
 import re
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, BackgroundTasks
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from be.app.services.ai_processor import process_meeting_audio_task
 from storage3.exceptions import StorageApiError
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
 from app.core.deps import CurrentUser
 from app.core.supabase import get_public_url, get_storage_client
 from app.models.project import Meeting, MeetingFile, ProcessingJob, Project, ProjectMember
@@ -282,6 +283,7 @@ async def upload_meeting_file(
 async def enqueue_meeting_process(
     meeting_id: uuid.UUID,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     db: DBSession,
 ) -> MeetingStatusRead:
     meeting = await _get_meeting_or_404(db, meeting_id)
@@ -320,6 +322,15 @@ async def enqueue_meeting_process(
     await db.refresh(meeting)
     if latest_job.id is not None:
         await db.refresh(latest_job)
+
+    async def task_wrapper():
+        # Phải tạo một session DB mới cho Background Task, vì session cũ ở API đã bị đóng
+        async with AsyncSessionLocal() as session:
+            await process_meeting_audio_task(meeting.id, latest_job.id, current_user.id, session)
+
+    if latest_job.status == "queued":
+        background_tasks.add_task(task_wrapper)
+        
     return await _serialize_meeting_status(db, meeting)
 
 
