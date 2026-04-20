@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
     SUPABASE_BUCKET: str = "media"
 
+    # AI Config
+    HF_TOKEN: str | None = None
+
     @property
     def async_database_url(self) -> str:
         return (
