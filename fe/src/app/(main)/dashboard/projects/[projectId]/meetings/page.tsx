@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ArrowLeft, Calendar, CalendarX, ClipboardPlus } from "lucide-react";
+import { ArrowLeft, Calendar, CalendarX, ClipboardPlus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,11 +30,11 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
+    <div className="fade-in slide-in-from-bottom-4 animate-in space-y-6 duration-500">
       <div className="mb-2">
         <Link
           href={`/dashboard/projects/${project.id}`}
-          className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center font-medium text-muted-foreground text-sm transition-colors hover:text-foreground"
         >
           <ArrowLeft className="mr-2 size-4" />
           Back to configuration
@@ -44,8 +44,14 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-semibold text-2xl tracking-tight">Meetings</h1>
-          <p className="text-muted-foreground text-sm mt-1">{project.name}</p>
+          <p className="mt-1 text-muted-foreground text-sm">{project.name}</p>
         </div>
+        <Link href={`/dashboard/projects/${project.id}/meetings/search`}>
+          <span className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-muted/30">
+            <Search className="size-4" />
+            Search &amp; filter
+          </span>
+        </Link>
       </div>
 
       <Card className="shadow-sm">
@@ -80,7 +86,7 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="space-y-1">
                     <p className="font-semibold">{meeting.title}</p>
-                    <p className="text-muted-foreground text-sm flex items-center gap-1.5">
+                    <p className="flex items-center gap-1.5 text-muted-foreground text-sm">
                       <Calendar className="size-3.5" />
                       {new Date(meeting.meeting_date).toLocaleString()}
                     </p>
@@ -90,12 +96,12 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
               </Link>
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center animate-in fade-in zoom-in-95 duration-500">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted mb-4 shadow-sm">
+            <div className="fade-in zoom-in-95 flex animate-in flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center duration-500">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted shadow-sm">
                 <CalendarX className="size-6 text-muted-foreground" />
               </div>
               <p className="font-semibold text-base">No meetings scheduled</p>
-              <p className="max-w-sm mt-1 text-muted-foreground text-sm">
+              <p className="mt-1 max-w-sm text-muted-foreground text-sm">
                 Get started by creating a new meeting draft above. Once created, you can upload meeting audio for
                 processing.
               </p>

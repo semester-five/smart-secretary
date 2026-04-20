@@ -186,6 +186,106 @@ export type MeetingStatus = {
     updated_at: string;
 };
 
+export type Speaker = {
+    id: string;
+    meeting_id: string;
+    speaker_label: string;
+    display_name: string | null;
+    is_confirmed: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+export type TranscriptSegment = {
+    id: string;
+    meeting_id: string;
+    version_no: number;
+    speaker_id: string | null;
+    speaker_label: string;
+    start_ms: number;
+    end_ms: number;
+    text: string;
+    confidence: number | null;
+    source: "ai" | "manual";
+    created_at: string;
+    updated_at: string;
+};
+
+export type Transcript = {
+    meeting_id: string;
+    version_no: number;
+    speakers: Speaker[];
+    segments: TranscriptSegment[];
+};
+
+export type MeetingVersion = {
+    id: string;
+    meeting_id: string;
+    version_no: number;
+    change_note: string | null;
+    is_final: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+export type MeetingSummary = {
+    id: string;
+    meeting_id: string;
+    version_no: number;
+    summary_text: string;
+    key_points_json: Record<string, unknown> | null;
+    decisions_json: Record<string, unknown> | null;
+    source: "ai" | "manual";
+    created_at: string;
+    updated_at: string;
+};
+
+export type ActionItem = {
+    id: string;
+    meeting_id: string;
+    version_no: number;
+    title: string;
+    description: string | null;
+    assignee_user_id: string | null;
+    assignee_text: string | null;
+    due_date: string | null;
+    priority: "low" | "medium" | "high";
+    status: "open" | "in_progress" | "done";
+    source: "ai" | "manual";
+    created_at: string;
+    updated_at: string;
+};
+
+export type ActionItemCreatePayload = {
+    title: string;
+    description?: string | null;
+    assignee_user_id?: string | null;
+    assignee_text?: string | null;
+    due_date?: string | null;
+    priority?: "low" | "medium" | "high";
+    status?: "open" | "in_progress" | "done";
+};
+
+export type ActionItemUpdatePayload = Partial<ActionItemCreatePayload>;
+
+export type MeetingSearchQuery = {
+    projectId?: string;
+    fromDate?: string;
+    toDate?: string;
+    keyword?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+};
+
+export type MeetingSearchResponse = {
+    data: Meeting[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+};
+
 export async function getCurrentUserAction(): Promise<CurrentUser> {
     return apiRequest<CurrentUser>("/api/v1/users/me");
 }
@@ -245,8 +345,8 @@ export async function updateProjectAction(projectId: string, payload: ProjectUpd
     });
 }
 
-export async function listProjectMeetingsAction(projectId: string): Promise<Meeting[]> {
-    return apiRequest<Meeting[]>(`/api/v1/projects/${projectId}/meetings`);
+export async function listProjectMeetingsAction(projectId: string, sort = "meeting_date.desc"): Promise<Meeting[]> {
+    return apiRequest<Meeting[]>(`/api/v1/projects/${projectId}/meetings?sort=${encodeURIComponent(sort)}`);
 }
 
 export async function createMeetingAction(payload: MeetingCreatePayload): Promise<Meeting> {
@@ -278,6 +378,112 @@ export async function processMeetingAction(meetingId: string): Promise<MeetingSt
 
 export async function getMeetingStatusAction(meetingId: string): Promise<MeetingStatus> {
     return apiRequest<MeetingStatus>(`/api/v1/meetings/${meetingId}/status`);
+}
+
+export async function searchMeetingsAction(query: MeetingSearchQuery): Promise<MeetingSearchResponse> {
+    const params = new URLSearchParams();
+    if (query.projectId) params.set("projectId", query.projectId);
+    if (query.fromDate) params.set("fromDate", query.fromDate);
+    if (query.toDate) params.set("toDate", query.toDate);
+    if (query.keyword) params.set("keyword", query.keyword);
+    if (query.status) params.set("status", query.status);
+    if (query.page !== undefined) params.set("page", String(query.page));
+    if (query.pageSize !== undefined) params.set("pageSize", String(query.pageSize));
+
+    const queryString = params.toString();
+    const path = queryString ? `/api/v1/meetings/search?${queryString}` : "/api/v1/meetings/search";
+    return apiRequest<MeetingSearchResponse>(path);
+}
+
+export async function getTranscriptAction(meetingId: string, version = "latest"): Promise<Transcript> {
+    return apiRequest<Transcript>(`/api/v1/meetings/${meetingId}/transcript?version=${encodeURIComponent(version)}`);
+}
+
+export async function updateTranscriptSegmentAction(
+    meetingId: string,
+    segmentId: string,
+    text: string,
+): Promise<TranscriptSegment> {
+    return apiRequest<TranscriptSegment>(`/api/v1/meetings/${meetingId}/transcript/segments/${segmentId}`, {
+        method: "PATCH",
+        body: { text },
+    });
+}
+
+export async function renameSpeakerAction(meetingId: string, speakerId: string, displayName: string): Promise<Speaker> {
+    return apiRequest<Speaker>(`/api/v1/meetings/${meetingId}/speakers/${speakerId}/rename`, {
+        method: "POST",
+        body: { display_name: displayName },
+    });
+}
+
+export async function createMeetingVersionAction(
+    meetingId: string,
+    payload: { from_version?: number | "latest"; change_note?: string },
+): Promise<MeetingVersion> {
+    return apiRequest<MeetingVersion>(`/api/v1/meetings/${meetingId}/versions`, {
+        method: "POST",
+        body: payload,
+    });
+}
+
+export async function generateSummaryAction(meetingId: string): Promise<ProcessingJob> {
+    return apiRequest<ProcessingJob>(`/api/v1/meetings/${meetingId}/summary:generate`, {
+        method: "POST",
+    });
+}
+
+export async function getMeetingSummaryAction(meetingId: string, version = "latest"): Promise<MeetingSummary | null> {
+    return apiRequest<MeetingSummary | null>(
+        `/api/v1/meetings/${meetingId}/summary?version=${encodeURIComponent(version)}`,
+    );
+}
+
+export async function updateMeetingSummaryAction(
+    meetingId: string,
+    payload: {
+        summary_text: string;
+        key_points_json?: Record<string, unknown> | null;
+        decisions_json?: Record<string, unknown> | null;
+    },
+    version = "latest",
+): Promise<MeetingSummary> {
+    return apiRequest<MeetingSummary>(`/api/v1/meetings/${meetingId}/summary?version=${encodeURIComponent(version)}`, {
+        method: "PATCH",
+        body: payload,
+    });
+}
+
+export async function listActionItemsAction(meetingId: string, version = "latest"): Promise<ActionItem[]> {
+    return apiRequest<ActionItem[]>(`/api/v1/meetings/${meetingId}/action-items?version=${encodeURIComponent(version)}`);
+}
+
+export async function createActionItemAction(
+    meetingId: string,
+    payload: ActionItemCreatePayload,
+    version = "latest",
+): Promise<ActionItem> {
+    return apiRequest<ActionItem>(`/api/v1/meetings/${meetingId}/action-items?version=${encodeURIComponent(version)}`, {
+        method: "POST",
+        body: payload,
+    });
+}
+
+export async function updateActionItemAction(
+    meetingId: string,
+    actionItemId: string,
+    payload: ActionItemUpdatePayload,
+): Promise<ActionItem> {
+    return apiRequest<ActionItem>(`/api/v1/meetings/${meetingId}/action-items/${actionItemId}`, {
+        method: "PATCH",
+        body: payload,
+    });
+}
+
+export async function deleteActionItemAction(meetingId: string, actionItemId: string): Promise<void> {
+    await apiRequest<void>(`/api/v1/meetings/${meetingId}/action-items/${actionItemId}`, {
+        method: "DELETE",
+    });
 }
 
 export async function addProjectMemberAction(

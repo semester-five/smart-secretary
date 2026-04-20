@@ -245,15 +245,30 @@ async def list_project_meetings(
     project_id: uuid.UUID,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
+    sort: str = "meeting_date.desc",
 ) -> list[MeetingRead]:
     project = await _get_project_or_404(db, project_id)
     await _ensure_project_access(db, project, current_user)
+
+    if sort == "meeting_date.asc":
+        order_by = Meeting.meeting_date.asc()
+    elif sort == "meeting_date.desc":
+        order_by = Meeting.meeting_date.desc()
+    elif sort == "created_at.asc":
+        order_by = Meeting.created_at.asc()
+    elif sort == "created_at.desc":
+        order_by = Meeting.created_at.desc()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid sort value",
+        )
 
     meetings = (
         await db.scalars(
             select(Meeting)
             .where(Meeting.project_id == project_id, Meeting.deleted_at.is_(None))
-            .order_by(Meeting.meeting_date.desc())
+            .order_by(order_by)
         )
     ).all()
     return [MeetingRead.model_validate(meeting) for meeting in meetings]
