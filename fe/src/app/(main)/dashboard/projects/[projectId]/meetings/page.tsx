@@ -37,7 +37,7 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
           className="inline-flex items-center font-medium text-muted-foreground text-sm transition-colors hover:text-foreground"
         >
           <ArrowLeft className="mr-2 size-4" />
-          Back to configuration
+          Back to overview
         </Link>
       </div>
 

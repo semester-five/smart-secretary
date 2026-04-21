@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ArrowLeft, Calendar, Clock, User, Users } from "lucide-react";
+import { Calendar, Clock, PlayCircle, User } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProjectByIdAction, listProjectMeetingsAction } from "@/server/api-actions";
-
-import { UpdateProjectForm } from "../_components/update-project-form";
 
 export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -27,15 +25,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
-      <div className="mb-2">
-        <Link
-          href="/dashboard/projects"
-          className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 size-4" />
-          Back to all projects
-        </Link>
-      </div>
 
       {project.cover_image_url ? (
         <div className="overflow-hidden rounded-xl border object-cover shadow-sm">
@@ -65,7 +54,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <User className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-xl truncate" title={String(project.owner_id)}>
+            <div className="truncate font-mono text-sm text-muted-foreground" title={String(project.owner_id)}>
               {project.owner_id}
             </div>
           </CardContent>
@@ -90,41 +79,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_300px]">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Project Configuration</CardTitle>
-            <CardDescription>Update name, description, and status settings.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UpdateProjectForm project={project} />
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider px-1">Quick Links</h3>
-          <Link
-            href={`/dashboard/projects/${project.id}/members`}
-            className="group flex items-center justify-between rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
-          >
-            <div>
-              <p className="font-medium group-hover:text-primary transition-colors">Manage Members</p>
-              <p className="text-muted-foreground text-xs mt-1">Add or remove teammates</p>
-            </div>
-            <Users className="size-5 text-muted-foreground transition-transform group-hover:scale-110 group-hover:text-primary" />
-          </Link>
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle>Get started</CardTitle>
+          <CardDescription>Jump directly into what matters most for this project.</CardDescription>
+        </CardHeader>
+        <CardContent>
           <Link
             href={`/dashboard/projects/${project.id}/meetings`}
-            className="group flex items-center justify-between rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
+            className="group flex items-center gap-4 rounded-xl border bg-muted/20 p-4 transition-all hover:border-primary/50 hover:bg-muted/40"
           >
-            <div>
-              <p className="font-medium group-hover:text-primary transition-colors">View Meetings</p>
-              <p className="text-muted-foreground text-xs mt-1">Schedules and meeting history</p>
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <PlayCircle className="size-5 text-primary" />
             </div>
-            <Calendar className="size-5 text-muted-foreground transition-transform group-hover:scale-110 group-hover:text-primary" />
+            <div>
+              <p className="font-semibold group-hover:text-primary transition-colors">Go to Meetings</p>
+              <p className="mt-0.5 text-muted-foreground text-xs">Create, upload, and review your meeting records.</p>
+            </div>
           </Link>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
