@@ -149,7 +149,8 @@ export function NavMain({ items }: NavMainProps) {
     if (subItems?.length) {
       return subItems.some((sub) => path.startsWith(sub.url));
     }
-    return path === url;
+    // Exact match for short paths (like /dashboard/projects/ID), prefix match for deeper ones
+    return path === url || (url.split("/").length > 4 && path.startsWith(url));
   };
 
   const isSubmenuOpen = (subItems?: NavMainItem["subItems"]) => {
