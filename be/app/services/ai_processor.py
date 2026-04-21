@@ -10,7 +10,6 @@ import torch
 if not hasattr(torchaudio, "set_audio_backend"):
     torchaudio.set_audio_backend = lambda *args, **kwargs: None
     
-from pyannote.audio import Pipeline
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,21 +18,38 @@ from app.core.config import settings
 from app.core.supabase import get_storage_client
 from app.models.project import ProcessingJob, MeetingFile, Speaker, TranscriptSegment, MeetingVersion
 
-# Khởi tạo model ở mức global để không phải load lại từ đầu mỗi khi gọi API
+# Khởi tạo model ở mức global để không phải load lại từ đầu mỗi khi gọi API.
+# Pyannote được lazy-load để tránh làm app crash ở startup khi môi trường chưa tương thích.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 compute_type = "float16" if device == "cuda" else "int8"
 
-print("Loading Faster-Whisper...")
-whisper_model = WhisperModel("base", device=device, compute_type=compute_type)
+whisper_model: WhisperModel | None = None
+diarization_pipeline = None
 
-print("Loading Pyannote Diarization...")
-# Cần auth_token từ HuggingFace để tải model
-diarization_pipeline = Pipeline.from_pretrained(
-    "pyannote/speaker-diarization-3.1",
-    use_auth_token=settings.HF_TOKEN
-)
-if device == "cuda":
-    diarization_pipeline.to(torch.device("cuda"))
+
+def _initialize_models() -> None:
+    global whisper_model, diarization_pipeline
+
+    if whisper_model is None:
+        print("Loading Faster-Whisper...")
+        whisper_model = WhisperModel("base", device=device, compute_type=compute_type)
+
+    # Cần auth_token từ HuggingFace để tải model. Nếu lỗi dependency/runtime,
+    # vẫn cho phép luồng STT chạy với speaker_label="UNKNOWN".
+    if diarization_pipeline is None:
+        try:
+            from pyannote.audio import Pipeline
+
+            print("Loading Pyannote Diarization...")
+            diarization_pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=settings.HF_TOKEN,
+            )
+            if device == "cuda":
+                diarization_pipeline.to(torch.device("cuda"))
+        except Exception as exc:
+            diarization_pipeline = False
+            print(f"Pyannote diarization disabled: {exc}")
 
 
 async def process_meeting_audio_task(meeting_id: str, job_id: str, current_user_id: str, db: AsyncSession):
@@ -41,6 +57,8 @@ async def process_meeting_audio_task(meeting_id: str, job_id: str, current_user_
     Hàm này sẽ được chạy ngầm (Background Task)
     """
     try:
+        await asyncio.to_thread(_initialize_models)
+
         # 1. Đổi trạng thái Job thành đang chạy
         job = await db.scalar(select(ProcessingJob).where(ProcessingJob.id == job_id))
         if job:
@@ -65,10 +83,17 @@ async def process_meeting_audio_task(meeting_id: str, job_id: str, current_user_
             tmp_file.write(file_bytes)
             tmp_filepath = tmp_file.name
 
-        # 4. Chạy Pyannote Diarization
-        print("Bắt đầu phân chia giọng nói...")
-        # Pyannote chạy đồng bộ (synchronous), ta dùng asyncio.to_thread để không block server
-        diarization = await asyncio.to_thread(diarization_pipeline, tmp_filepath)
+        diarization = None
+        if diarization_pipeline not in (None, False):
+            # 4. Chạy Pyannote Diarization
+            print("Bắt đầu phân chia giọng nói...")
+            # Pyannote chạy đồng bộ (synchronous), ta dùng asyncio.to_thread để không block server
+            try:
+                diarization = await asyncio.to_thread(diarization_pipeline, tmp_filepath)
+            except Exception as exc:
+                print(f"Diarization failed, fallback to UNKNOWN speaker: {exc}")
+        else:
+            print("Skip diarization: model unavailable, fallback to UNKNOWN speaker.")
 
         # 5. Chạy Faster-Whisper
         print("Bắt đầu chuyển âm thanh thành văn bản...")
@@ -103,10 +128,11 @@ async def process_meeting_audio_task(meeting_id: str, job_id: str, current_user_
 
             # Tìm xem tại thời điểm (midpoint) này, ai đang nói (theo Pyannote)
             assigned_speaker = "UNKNOWN"
-            for turn, _, speaker_label in diarization.itertracks(yield_label=True):
-                if turn.start <= midpoint <= turn.end:
-                    assigned_speaker = speaker_label
-                    break
+            if diarization is not None:
+                for turn, _, speaker_label in diarization.itertracks(yield_label=True):
+                    if turn.start <= midpoint <= turn.end:
+                        assigned_speaker = speaker_label
+                        break
             
             unique_speakers.add(assigned_speaker)
 
