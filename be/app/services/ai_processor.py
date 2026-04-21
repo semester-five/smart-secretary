@@ -4,8 +4,13 @@ import asyncio
 from datetime import UTC, datetime
 
 from faster_whisper import WhisperModel
-from pyannote.audio import Pipeline
+import torchaudio
 import torch
+
+if not hasattr(torchaudio, "set_audio_backend"):
+    torchaudio.set_audio_backend = lambda *args, **kwargs: None
+    
+from pyannote.audio import Pipeline
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

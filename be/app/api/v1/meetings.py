@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, BackgroundTasks
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from be.app.services.ai_processor import process_meeting_audio_task
+from app.services.ai_processor import process_meeting_audio_task
 from storage3.exceptions import StorageApiError
 
 from app.core.config import settings
