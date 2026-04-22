@@ -1,9 +1,5 @@
 import { notFound } from "next/navigation";
 
-import { Captions } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMeetingByIdAction, getTranscriptAction } from "@/server/api-actions";
 
 import { TranscriptClient } from "./transcript-client";
@@ -20,29 +16,22 @@ export default async function TranscriptPage({
     getTranscriptAction(meetingId).catch(() => null),
   ]);
 
-  if (!meeting || !transcript) {
+  if (!meeting) {
     notFound();
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Captions className="size-5" />
-            Transcript segments
-          </CardTitle>
-          <CardDescription>Review transcript metadata and edit content below.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Segments: {transcript.segments.length} · Speakers: {transcript.speakers.length}
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {transcript ? (
+        <TranscriptClient meetingId={meetingId} transcript={transcript} />
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed">
+          <p className="font-semibold text-muted-foreground">Transcript not available</p>
+          <p className="mt-1 text-sm text-muted-foreground/60">
+            The meeting may still be processing. Check back after processing completes.
           </p>
-        </CardContent>
-      </Card>
-
-      <TranscriptClient meetingId={meetingId} transcript={transcript} />
+        </div>
+      )}
     </div>
   );
 }
