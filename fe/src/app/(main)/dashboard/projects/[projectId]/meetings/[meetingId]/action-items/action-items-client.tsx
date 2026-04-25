@@ -1,309 +1,188 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { useRouter } from "next/navigation";
-
-import { Loader2, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  type DragEndEvent,
+  type DragStartEvent,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   type ActionItem,
+  type ActionItemUpdatePayload,
   createActionItemAction,
   deleteActionItemAction,
   updateActionItemAction,
 } from "@/server/api-actions";
 
+import { ActionItemCard } from "./_components/action-item-card";
+import { ActionItemDetailSheet } from "./_components/action-item-detail-sheet";
+import { KanbanColumn } from "./_components/kanban-column";
+
+const COLUMN_ORDER: ActionItem["status"][] = ["open", "in_progress", "done"];
+
 export function ActionItemsClient({ meetingId, initialItems }: { meetingId: string; initialItems: ActionItem[] }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [newTitle, setNewTitle] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newPriority, setNewPriority] = useState<ActionItem["priority"]>("medium");
-  const [newDueDate, setNewDueDate] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
-  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [items, setItems] = useState<ActionItem[]>(initialItems);
+  const [activeItem, setActiveItem] = useState<ActionItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ActionItem | null>(null);
+  // Track whether a drag actually moved the pointer (vs just a click)
+  const didDragRef = useRef(false);
 
-  const initialDrafts = useMemo(
-    () =>
-      Object.fromEntries(
-        initialItems.map((item) => [
-          item.id,
-          {
-            title: item.title,
-            description: item.description ?? "",
-            priority: item.priority,
-            due_date: item.due_date ? item.due_date.slice(0, 10) : "",
-            status: item.status,
-          },
-        ]),
-      ),
-    [initialItems],
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Require 8px movement before activating drag, so a simple click still works
+      activationConstraint: { distance: 8 },
+    }),
   );
-  const [drafts, setDrafts] =
-    useState<
-      Record<
-        string,
-        {
-          title: string;
-          description: string;
-          priority: ActionItem["priority"];
-          due_date: string;
-          status: ActionItem["status"];
+
+  // Group items by status
+  const columnItems = useCallback(
+    (status: ActionItem["status"]) => items.filter((i) => i.status === status),
+    [items],
+  );
+
+  // Drag start
+  const handleDragStart = (event: DragStartEvent) => {
+    didDragRef.current = true;
+    const item = items.find((i) => i.id === event.active.id);
+    if (item) setActiveItem(item);
+  };
+
+  // Drag end – optimistic update + API call
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveItem(null);
+    // Reset drag flag after a short delay so the card onClick doesn't fire
+    setTimeout(() => { didDragRef.current = false; }, 0);
+
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const activeItemData = items.find((i) => i.id === activeId);
+    if (!activeItemData) return;
+
+    // overId is either a column status ("open", "in_progress", "done") or a card UUID
+    const validStatuses: ActionItem["status"][] = ["open", "in_progress", "done"];
+    const isColumnDrop = validStatuses.includes(overId as ActionItem["status"]);
+    const overItem = items.find((i) => i.id === overId);
+    const targetStatus: ActionItem["status"] = isColumnDrop
+      ? (overId as ActionItem["status"])
+      : (overItem?.status ?? activeItemData.status);
+
+    if (!validStatuses.includes(targetStatus)) return;
+
+    const sameColumn = activeItemData.status === targetStatus;
+
+    // Optimistic update
+    setItems((prev) => {
+      let updated = prev.map((i) => (i.id === activeId ? { ...i, status: targetStatus } : i));
+
+      if (sameColumn && !isColumnDrop) {
+        const activeIdx = updated.findIndex((i) => i.id === activeId);
+        const overIdx = updated.findIndex((i) => i.id === overId);
+        if (activeIdx !== -1 && overIdx !== -1) {
+          updated = arrayMove(updated, activeIdx, overIdx);
         }
-      >
-    >(initialDrafts);
+      }
+      return updated;
+    });
 
-  const createItem = () => {
-    const title = newTitle.trim();
-    if (!title) {
-      toast.error("Action item title is required.");
-      return;
+    // If status changed, persist via API
+    if (!sameColumn) {
+      try {
+        await updateActionItemAction(meetingId, activeId, { status: targetStatus });
+        toast.success("Item moved.");
+      } catch {
+        setItems(initialItems);
+        toast.error("Failed to move item. Please try again.");
+      }
     }
-
-    startTransition(async () => {
-      try {
-        setIsCreating(true);
-        await createActionItemAction(meetingId, {
-          title,
-          description: newDescription.trim() || null,
-          priority: newPriority,
-          due_date: newDueDate || null,
-          status: "open",
-        });
-        toast.success("Action item created.");
-        setNewTitle("");
-        setNewDescription("");
-        setNewPriority("medium");
-        setNewDueDate("");
-        router.refresh();
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to create action item.");
-      } finally {
-        setIsCreating(false);
-      }
-    });
   };
 
-  const toggleStatus = (item: ActionItem) => {
-    const nextStatus = item.status === "done" ? "open" : "done";
-    startTransition(async () => {
-      try {
-        setUpdatingItemId(item.id);
-        await updateActionItemAction(meetingId, item.id, { status: nextStatus });
-        toast.success("Action item updated.");
-        router.refresh();
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to update action item.");
-      } finally {
-        setUpdatingItemId(null);
+  // Card click – only open detail if we didn't just drag
+  const handleCardClick = useCallback(
+    (item: ActionItem) => {
+      if (!didDragRef.current) {
+        setSelectedItem(item);
       }
-    });
-  };
+    },
+    [],
+  );
 
-  const saveDetails = (item: ActionItem) => {
-    const draft = drafts[item.id];
-    if (!draft || !draft.title.trim()) {
-      toast.error("Action item title is required.");
-      return;
+  // Add card from inline form
+  const handleAddCard = async (title: string, status: ActionItem["status"]) => {
+    try {
+      const newItem = await createActionItemAction(meetingId, {
+        title,
+        status,
+        priority: "medium",
+      });
+      setItems((prev) => [...prev, newItem]);
+      toast.success("Action item added.");
+    } catch {
+      toast.error("Failed to create action item.");
     }
-
-    startTransition(async () => {
-      try {
-        setUpdatingItemId(item.id);
-        await updateActionItemAction(meetingId, item.id, {
-          title: draft.title.trim(),
-          description: draft.description.trim() || null,
-          priority: draft.priority,
-          due_date: draft.due_date || null,
-          status: draft.status,
-        });
-        toast.success("Action item details updated.");
-        router.refresh();
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to update action item details.");
-      } finally {
-        setUpdatingItemId(null);
-      }
-    });
   };
 
-  const removeItem = (itemId: string) => {
-    startTransition(async () => {
-      try {
-        setDeletingItemId(itemId);
-        await deleteActionItemAction(meetingId, itemId);
-        toast.success("Action item deleted.");
-        router.refresh();
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to delete action item.");
-      } finally {
-        setDeletingItemId(null);
-      }
-    });
+  // Update from detail sheet
+  const handleUpdate = async (id: string, payload: ActionItemUpdatePayload) => {
+    const updated = await updateActionItemAction(meetingId, id, payload);
+    setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    // Also update selectedItem to reflect new data
+    setSelectedItem(updated);
+  };
+
+  // Delete from detail sheet
+  const handleDelete = async (id: string) => {
+    await deleteActionItemAction(meetingId, id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    toast.success("Action item deleted.");
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create action item</CardTitle>
-          <CardDescription>Add follow-up tasks from this meeting.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="Title" />
-          <Textarea
-            value={newDescription}
-            onChange={(event) => setNewDescription(event.target.value)}
-            placeholder="Description (optional)"
-            rows={3}
-          />
-          <div className="grid gap-2 md:grid-cols-2">
-            <select
-              value={newPriority}
-              onChange={(event) => setNewPriority(event.target.value as ActionItem["priority"])}
-              className="h-10 rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
-            </select>
-            <Input type="date" value={newDueDate} onChange={(event) => setNewDueDate(event.target.value)} />
-          </div>
-          <Button type="button" disabled={isPending && isCreating} onClick={createItem}>
-            {isPending && isCreating ? <Loader2 className="size-4 animate-spin" /> : null}
-            Add action item
-          </Button>
-        </CardContent>
-      </Card>
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {/* Board: 3 columns */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {COLUMN_ORDER.map((status) => (
+            <KanbanColumn
+              key={status}
+              status={status}
+              items={columnItems(status)}
+              onCardClick={handleCardClick}
+              onAddCard={handleAddCard}
+            />
+          ))}
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Task list</CardTitle>
-          <CardDescription>Toggle done/open status and remove outdated tasks.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {initialItems.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No action items yet.</p>
-          ) : (
-            initialItems.map((item) => (
-              <div key={item.id} className="space-y-3 rounded-lg border p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-medium text-sm">{item.title}</p>
-                  <Badge variant={item.status === "done" ? "default" : "secondary"}>{item.status}</Badge>
-                </div>
+        {/* Drag overlay – ghost card while dragging */}
+        <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+          {activeItem ? <ActionItemCard item={activeItem} onClick={() => {}} overlay /> : null}
+        </DragOverlay>
+      </DndContext>
 
-                <Input
-                  value={drafts[item.id]?.title ?? ""}
-                  onChange={(event) =>
-                    setDrafts((current) => ({
-                      ...current,
-                      [item.id]: { ...current[item.id], title: event.target.value },
-                    }))
-                  }
-                  placeholder="Title"
-                />
-                <Textarea
-                  value={drafts[item.id]?.description ?? ""}
-                  onChange={(event) =>
-                    setDrafts((current) => ({
-                      ...current,
-                      [item.id]: { ...current[item.id], description: event.target.value },
-                    }))
-                  }
-                  placeholder="Description"
-                  rows={2}
-                />
-                <div className="grid gap-2 md:grid-cols-3">
-                  <select
-                    value={drafts[item.id]?.priority ?? "medium"}
-                    onChange={(event) =>
-                      setDrafts((current) => ({
-                        ...current,
-                        [item.id]: {
-                          ...current[item.id],
-                          priority: event.target.value as ActionItem["priority"],
-                        },
-                      }))
-                    }
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  >
-                    <option value="low">low</option>
-                    <option value="medium">medium</option>
-                    <option value="high">high</option>
-                  </select>
-                  <Input
-                    type="date"
-                    value={drafts[item.id]?.due_date ?? ""}
-                    onChange={(event) =>
-                      setDrafts((current) => ({
-                        ...current,
-                        [item.id]: { ...current[item.id], due_date: event.target.value },
-                      }))
-                    }
-                  />
-                  <select
-                    value={drafts[item.id]?.status ?? "open"}
-                    onChange={(event) =>
-                      setDrafts((current) => ({
-                        ...current,
-                        [item.id]: {
-                          ...current[item.id],
-                          status: event.target.value as ActionItem["status"],
-                        },
-                      }))
-                    }
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  >
-                    <option value="open">open</option>
-                    <option value="in_progress">in_progress</option>
-                    <option value="done">done</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    disabled={isPending && updatingItemId === item.id}
-                    onClick={() => saveDetails(item)}
-                  >
-                    {isPending && updatingItemId === item.id ? <Loader2 className="size-4 animate-spin" /> : null}
-                    Save details
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isPending && updatingItemId === item.id}
-                    onClick={() => toggleStatus(item)}
-                  >
-                    {isPending && updatingItemId === item.id ? <Loader2 className="size-4 animate-spin" /> : null}
-                    Mark as {item.status === "done" ? "open" : "done"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={isPending && deletingItemId === item.id}
-                    onClick={() => removeItem(item.id)}
-                  >
-                    {isPending && deletingItemId === item.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="size-4" />
-                    )}
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      {/* Detail sheet */}
+      <ActionItemDetailSheet
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+      />
+    </>
   );
 }
