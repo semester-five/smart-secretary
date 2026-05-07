@@ -42,6 +42,11 @@ export default async function MeetingLayout({
       iconKey: "transcript",
     },
     {
+      title: "Speakers",
+      href: `/dashboard/projects/${projectId}/meetings/${meetingId}/speakers`,
+      iconKey: "speakers",
+    },
+    {
       title: "Summary",
       href: `/dashboard/projects/${projectId}/meetings/${meetingId}/summary`,
       iconKey: "summary",

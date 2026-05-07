@@ -32,7 +32,8 @@ from app.schemas.meeting_intelligence import (
     MeetingVersionCreate,
     MeetingVersionRead,
     SpeakerRead,
-    SpeakerRenameRequest,
+    SpeakerCreate,
+    SpeakerUpdate,
     TranscriptRead,
     TranscriptSegmentRead,
     TranscriptSegmentUpdate,
@@ -264,6 +265,26 @@ async def search_meetings(
     )
 
 
+@router.get("/{meeting_id}/versions", response_model=list[MeetingVersionRead])
+async def get_meeting_versions(
+    meeting_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[MeetingVersionRead]:
+    meeting = await _get_meeting_or_404(db, meeting_id)
+    project = await _get_project_or_404(db, meeting.project_id)
+    await _ensure_project_access(db, project, current_user)
+
+    versions = (
+        await db.scalars(
+            select(MeetingVersion)
+            .where(MeetingVersion.meeting_id == meeting_id, MeetingVersion.deleted_at.is_(None))
+            .order_by(MeetingVersion.version_no.desc())
+        )
+    ).all()
+    return [MeetingVersionRead.model_validate(v) for v in versions]
+
+
 @router.get("/{meeting_id}/transcript", response_model=TranscriptRead)
 async def get_transcript(
     meeting_id: uuid.UUID,
@@ -326,7 +347,11 @@ async def update_transcript_segment(
     if segment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found")
 
-    segment.text = payload.text
+    if payload.text is not None:
+        segment.text = payload.text
+    if payload.speaker_id is not None:
+        # Optionally, check if speaker_id exists
+        segment.speaker_id = payload.speaker_id
     segment.source = "manual"
     segment.updated_at = datetime.now(UTC)
     segment.updated_by = current_user.id
@@ -336,11 +361,60 @@ async def update_transcript_segment(
     return TranscriptSegmentRead.model_validate(segment)
 
 
-@router.post("/{meeting_id}/speakers/{speaker_id}/rename", response_model=SpeakerRead)
-async def rename_speaker(
+@router.get("/{meeting_id}/speakers", response_model=list[SpeakerRead])
+async def list_speakers(
+    meeting_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> list[SpeakerRead]:
+    meeting = await _get_meeting_or_404(db, meeting_id)
+    project = await _get_project_or_404(db, meeting.project_id)
+    await _ensure_project_access(db, project, current_user)
+
+    speakers = (
+        await db.scalars(
+            select(Speaker)
+            .where(Speaker.meeting_id == meeting_id, Speaker.deleted_at.is_(None))
+            .order_by(Speaker.speaker_label.asc())
+        )
+    ).all()
+    return [SpeakerRead.model_validate(spk) for spk in speakers]
+
+
+@router.post("/{meeting_id}/speakers", response_model=SpeakerRead, status_code=status.HTTP_201_CREATED)
+async def create_speaker(
+    meeting_id: uuid.UUID,
+    payload: SpeakerCreate,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> SpeakerRead:
+    meeting = await _get_meeting_or_404(db, meeting_id)
+    project = await _get_project_or_404(db, meeting.project_id)
+    await _ensure_project_editor(db, project, current_user)
+
+    now = datetime.now(UTC)
+    speaker = Speaker(
+        meeting_id=meeting_id,
+        speaker_label=payload.display_name, # Fallback label
+        display_name=payload.display_name,
+        color_label=payload.color_label,
+        is_confirmed=True,
+        created_at=now,
+        updated_at=now,
+        created_by=current_user.id,
+        updated_by=current_user.id,
+    )
+    db.add(speaker)
+    await db.commit()
+    await db.refresh(speaker)
+    return SpeakerRead.model_validate(speaker)
+
+
+@router.patch("/{meeting_id}/speakers/{speaker_id}", response_model=SpeakerRead)
+async def update_speaker(
     meeting_id: uuid.UUID,
     speaker_id: uuid.UUID,
-    payload: SpeakerRenameRequest,
+    payload: SpeakerUpdate,
     current_user: CurrentUser,
     db: DBSession,
 ) -> SpeakerRead:
@@ -358,7 +432,11 @@ async def rename_speaker(
     if speaker is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Speaker not found")
 
-    speaker.display_name = payload.display_name.strip()
+    if payload.display_name is not None:
+        speaker.display_name = payload.display_name.strip()
+    if payload.color_label is not None:
+        speaker.color_label = payload.color_label
+        
     speaker.is_confirmed = True
     speaker.updated_at = datetime.now(UTC)
     speaker.updated_by = current_user.id
@@ -366,6 +444,35 @@ async def rename_speaker(
     await db.commit()
     await db.refresh(speaker)
     return SpeakerRead.model_validate(speaker)
+
+
+@router.delete("/{meeting_id}/speakers/{speaker_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_speaker(
+    meeting_id: uuid.UUID,
+    speaker_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> Response:
+    meeting = await _get_meeting_or_404(db, meeting_id)
+    project = await _get_project_or_404(db, meeting.project_id)
+    await _ensure_project_editor(db, project, current_user)
+
+    speaker = await db.scalar(
+        select(Speaker).where(
+            Speaker.id == speaker_id,
+            Speaker.meeting_id == meeting_id,
+            Speaker.deleted_at.is_(None),
+        )
+    )
+    if speaker is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Speaker not found")
+
+    speaker.deleted_at = datetime.now(UTC)
+    speaker.updated_at = datetime.now(UTC)
+    speaker.updated_by = current_user.id
+
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{meeting_id}/versions", response_model=MeetingVersionRead, status_code=status.HTTP_201_CREATED)
@@ -418,7 +525,6 @@ async def create_meeting_version(
                 meeting_id=meeting_id,
                 version_no=next_version,
                 speaker_id=segment.speaker_id,
-                speaker_label=segment.speaker_label,
                 start_ms=segment.start_ms,
                 end_ms=segment.end_ms,
                 text=segment.text,

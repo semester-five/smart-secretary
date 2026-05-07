@@ -5,6 +5,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "200mb",
     },
+    middlewareClientMaxBodySize: 50 * 1024 * 1024,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

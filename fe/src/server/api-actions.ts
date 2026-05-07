@@ -191,6 +191,7 @@ export type Speaker = {
   meeting_id: string;
   speaker_label: string;
   display_name: string | null;
+  color_label: string;
   is_confirmed: boolean;
   created_at: string;
   updated_at: string;
@@ -200,8 +201,7 @@ export type TranscriptSegment = {
   id: string;
   meeting_id: string;
   version_no: number;
-  speaker_id: string | null;
-  speaker_label: string;
+  speaker_id: string;
   start_ms: number;
   end_ms: number;
   text: string;
@@ -399,21 +399,49 @@ export async function getTranscriptAction(meetingId: string, version = "latest")
   return apiRequest<Transcript>(`/api/v1/meetings/${meetingId}/transcript?version=${encodeURIComponent(version)}`);
 }
 
-export async function updateTranscriptSegmentAction(
+export async function getMeetingVersionsAction(meetingId: string): Promise<MeetingVersion[]> {
+  return apiRequest<MeetingVersion[]>(`/api/v1/meetings/${meetingId}/versions`);
+}
+
+export async function listSpeakersAction(meetingId: string): Promise<Speaker[]> {
+  return apiRequest<Speaker[]>(`/api/v1/meetings/${meetingId}/speakers`);
+}
+
+export async function createSpeakerAction(
   meetingId: string,
-  segmentId: string,
-  text: string,
-): Promise<TranscriptSegment> {
-  return apiRequest<TranscriptSegment>(`/api/v1/meetings/${meetingId}/transcript/segments/${segmentId}`, {
-    method: "PATCH",
-    body: { text },
+  payload: { display_name: string; color_label: string },
+): Promise<Speaker> {
+  return apiRequest<Speaker>(`/api/v1/meetings/${meetingId}/speakers`, {
+    method: "POST",
+    body: payload,
   });
 }
 
-export async function renameSpeakerAction(meetingId: string, speakerId: string, displayName: string): Promise<Speaker> {
-  return apiRequest<Speaker>(`/api/v1/meetings/${meetingId}/speakers/${speakerId}/rename`, {
-    method: "POST",
-    body: { display_name: displayName },
+export async function updateSpeakerAction(
+  meetingId: string,
+  speakerId: string,
+  payload: { display_name?: string; color_label?: string },
+): Promise<Speaker> {
+  return apiRequest<Speaker>(`/api/v1/meetings/${meetingId}/speakers/${speakerId}`, {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
+export async function deleteSpeakerAction(meetingId: string, speakerId: string): Promise<void> {
+  await apiRequest<void>(`/api/v1/meetings/${meetingId}/speakers/${speakerId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function updateTranscriptSegmentAction(
+  meetingId: string,
+  segmentId: string,
+  payload: { text?: string; speaker_id?: string },
+): Promise<TranscriptSegment> {
+  return apiRequest<TranscriptSegment>(`/api/v1/meetings/${meetingId}/transcript/segments/${segmentId}`, {
+    method: "PATCH",
+    body: payload,
   });
 }
 
