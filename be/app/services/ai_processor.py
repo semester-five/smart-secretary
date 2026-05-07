@@ -25,13 +25,14 @@ compute_type = "float16" if device == "cuda" else "int8"
 
 whisper_model: WhisperModel | None = None
 diarization_pipeline = None
+_diarization_failed = False   # FIX Bug 3: tách biệt "chưa load" vs "load thất bại"
 
 
 # ---------------------------------------------------------------------------
-# Model initialization 
+# Model initialization
 # ---------------------------------------------------------------------------
 def _initialize_models() -> None:
-    global whisper_model, diarization_pipeline
+    global whisper_model, diarization_pipeline, _diarization_failed
 
     if whisper_model is None:
         print("Loading Faster-Whisper [large-v3-turbo]...")
@@ -42,25 +43,25 @@ def _initialize_models() -> None:
         )
         print("✅ Whisper loaded.")
 
-    if diarization_pipeline is None:
+    if diarization_pipeline is None and not _diarization_failed:
         try:
             from pyannote.audio import Pipeline
 
             print("Loading Pyannote Diarization [speaker-diarization-3.1]...")
             diarization_pipeline = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization-3.1",
-                token=settings.HF_TOKEN,          # ← đổi use_auth_token → token
+                token=settings.HF_TOKEN,
             )
             if device == "cuda":
                 diarization_pipeline.to(torch.device("cuda"))
             print("✅ Pyannote loaded.")
         except Exception as exc:
-            diarization_pipeline = False
+            _diarization_failed = True   # FIX Bug 3: không dùng sentinel False nữa
             print(f"⚠️  Pyannote diarization disabled: {exc}")
 
 
 # ---------------------------------------------------------------------------
-# Helper: overlap scoring 
+# Helper: overlap scoring
 # ---------------------------------------------------------------------------
 def _get_best_speaker(annotation, start_sec: float, end_sec: float) -> str:
     """
@@ -86,6 +87,8 @@ async def process_meeting_audio_task(
     db: AsyncSession,
 ) -> None:
     """Chạy ngầm (Background Task): transcribe + diarize → lưu DB."""
+
+    tmp_filepath: str | None = None
 
     try:
         await asyncio.to_thread(_initialize_models)
@@ -118,21 +121,20 @@ async def process_meeting_audio_task(
             tmp_filepath = tmp_file.name
 
         # 4. Diarization (Pyannote)
+        # FIX Bug 1 & 2: Pipeline.__call__ luôn trả về Annotation trực tiếp.
+        # Không cần check .speaker_diarization — attribute đó không tồn tại
+        # trong pyannote.audio 3.x khi gọi pipeline(audio_path).
         annotation = None
-        if diarization_pipeline not in (None, False):
+        if diarization_pipeline is not None:
             print("Bắt đầu phân chia giọng nói (Pyannote)...")
             try:
-                diarization_output = await asyncio.to_thread(
+                # Pipeline.__call__ trả về pyannote.core.Annotation trực tiếp
+                annotation = await asyncio.to_thread(
                     diarization_pipeline, tmp_filepath
                 )
-                # DiarizeOutput (pyannote >= 3.x) chứa Annotation trong .speaker_diarization
-                annotation = (
-                    diarization_output.speaker_diarization
-                    if hasattr(diarization_output, "speaker_diarization")
-                    else diarization_output   # fallback nếu trả về Annotation trực tiếp
-                )
-                print("✅ Diarization xong.")
+                print(f"✅ Diarization xong. Số speakers: {len(annotation.labels())}")
             except Exception as exc:
+                annotation = None
                 print(f"⚠️  Diarization failed, fallback to UNKNOWN speaker: {exc}")
         else:
             print("⚠️  Skip diarization: model unavailable, fallback to UNKNOWN speaker.")
@@ -144,16 +146,20 @@ async def process_meeting_audio_task(
             tmp_filepath,
             language="vi",
             beam_size=5,
-            vad_filter=True,                    # lọc khoảng lặng → giảm hallucination
+            vad_filter=True,
             vad_parameters=dict(min_silence_duration_ms=500),
-            word_timestamps=True,               # timestamp cấp từ → map diarization chính xác hơn
-            condition_on_previous_text=False,   # giảm lặp đoạn text lỗi
+            word_timestamps=True,
+            condition_on_previous_text=False,
         )
         whisper_segments = list(segments_generator)
-        print(f"✅ Whisper xong. Ngôn ngữ detect: {info.language} ({info.language_probability:.0%}), {len(whisper_segments)} segments.")
+        print(
+            f"✅ Whisper xong. Ngôn ngữ detect: {info.language} "
+            f"({info.language_probability:.0%}), {len(whisper_segments)} segments."
+        )
 
-        # Xóa file tạm
+        # Xóa file tạm sau khi cả 2 model đã xử lý xong
         os.remove(tmp_filepath)
+        tmp_filepath = None
 
         # 6. Đảm bảo MeetingVersion = 1 tồn tại
         version = await db.scalar(
@@ -182,7 +188,6 @@ async def process_meeting_audio_task(
             end_sec   = segment.end
             text      = segment.text.strip()
 
-            # Overlap scoring thay cho midpoint
             assigned_speaker = (
                 _get_best_speaker(annotation, start_sec, end_sec)
                 if annotation is not None
@@ -214,14 +219,17 @@ async def process_meeting_audio_task(
             ))
 
         # 9. Hoàn thành
-        job.status     = "completed"
-        job.progress   = 100
+        job.status      = "completed"
+        job.progress    = 100
         job.finished_at = datetime.now(UTC)
         await db.commit()
         print(f"✅ Xử lý thành công cuộc họp {meeting_id}!")
 
     except Exception as e:
         print(f"❌ Lỗi khi xử lý AI: {e}")
+        # Cleanup file tạm nếu chưa xóa
+        if tmp_filepath and os.path.exists(tmp_filepath):
+            os.remove(tmp_filepath)
         job = await db.scalar(select(ProcessingJob).where(ProcessingJob.id == job_id))
         if job:
             job.status        = "failed"
