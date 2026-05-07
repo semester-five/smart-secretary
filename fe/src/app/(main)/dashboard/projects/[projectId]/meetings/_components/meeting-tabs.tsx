@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Captions, CheckSquare, FileText, LayoutDashboard, Mic } from "lucide-react";
+import { Captions, CheckSquare, FileText, LayoutDashboard, Mic, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ const ICON_MAP = {
   overview: LayoutDashboard,
   audio: Mic,
   transcript: Captions,
+  speakers: Users,
   summary: FileText,
   "action-items": CheckSquare,
 } as const;

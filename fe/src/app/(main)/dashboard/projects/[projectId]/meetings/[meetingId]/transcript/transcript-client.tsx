@@ -8,14 +8,13 @@ import { toast } from "sonner";
 
 import {
   createMeetingVersionAction,
-  renameSpeakerAction,
+  updateSpeakerAction,
   type Transcript,
   type TranscriptSegment,
   updateTranscriptSegmentAction,
 } from "@/server/api-actions";
 
 import { ChatBubble, formatMs, SPEAKER_COLORS } from "./_components/chat-bubble";
-import { SpeakerPanel } from "./_components/speaker-panel";
 import { VersionPanel } from "./_components/version-panel";
 
 // ─── Gap threshold for time separator (ms) ────────────────────────────────────
@@ -26,66 +25,48 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
   const [isPending, startTransition] = useTransition();
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [savingSegmentId, setSavingSegmentId] = useState<string | null>(null);
-  const [renamingSpeakerId, setRenamingSpeakerId] = useState<string | null>(null);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
 
-  // Editable segment text drafts (reflects latest server text initially)
-  const [segmentDrafts, setSegmentDrafts] = useState<Record<string, string>>(
-    () => Object.fromEntries(transcript.segments.map((s) => [s.id, s.text])),
+  // Editable segment drafts {text, speakerId}
+  const [segmentDrafts, setSegmentDrafts] = useState<Record<string, { text: string; speakerId: string }>>(
+    () => Object.fromEntries(transcript.segments.map((s) => [s.id, { text: s.text, speakerId: s.speaker_id }])),
   );
 
-  // Editable speaker display name drafts
-  const [speakerDrafts, setSpeakerDrafts] = useState<Record<string, string>>(
-    () =>
-      Object.fromEntries(
-        transcript.speakers.map((sp) => [sp.id, sp.display_name ?? sp.speaker_label]),
-      ),
-  );
 
-  // Speaker colors – local state only (not persisted to backend)
-  const [speakerColors, setSpeakerColors] = useState<Record<string, string>>(
-    () =>
-      Object.fromEntries(
-        transcript.speakers.map((sp, idx) => [sp.id, SPEAKER_COLORS[idx % SPEAKER_COLORS.length].id]),
-      ),
-  );
 
-  // Lookup speaker by label for segments without speaker_id
-  const speakerByLabel = useMemo(
-    () => Object.fromEntries(transcript.speakers.map((sp) => [sp.speaker_label, sp])),
+  // Lookup speaker by ID
+  const speakerById = useMemo(
+    () => Object.fromEntries(transcript.speakers.map((sp) => [sp.id, sp])),
     [transcript.speakers],
   );
 
   const getSpeakerForSegment = (segment: TranscriptSegment) => {
-    if (segment.speaker_id) {
-      return transcript.speakers.find((sp) => sp.id === segment.speaker_id);
-    }
-    return speakerByLabel[segment.speaker_label];
+    return speakerById[segment.speaker_id];
   };
 
   const getColorForSegment = (segment: TranscriptSegment) => {
     const speaker = getSpeakerForSegment(segment);
     if (speaker) {
-      const colorId = speakerColors[speaker.id];
-      return SPEAKER_COLORS.find((c) => c.id === colorId) ?? SPEAKER_COLORS[0];
+      return SPEAKER_COLORS.find((c) => c.id === speaker.color_label) ?? SPEAKER_COLORS[0];
     }
-    // Unknown speaker – fallback by label index
-    const labelIdx = Object.keys(speakerByLabel).indexOf(segment.speaker_label);
-    return SPEAKER_COLORS[Math.max(0, labelIdx) % SPEAKER_COLORS.length];
+    return SPEAKER_COLORS[0];
   };
 
   const getSpeakerDisplayName = (segment: TranscriptSegment): string => {
     const speaker = getSpeakerForSegment(segment);
     if (speaker) {
-      return speakerDrafts[speaker.id] ?? speaker.display_name ?? speaker.speaker_label;
+      return speaker.display_name ?? speaker.speaker_label;
     }
-    return segment.speaker_label;
+    return "Unknown Speaker";
   };
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
 
   const saveSegment = (segmentId: string) => {
-    const text = (segmentDrafts[segmentId] ?? "").trim();
+    const draft = segmentDrafts[segmentId];
+    if (!draft) return;
+    
+    const text = draft.text.trim();
     if (!text) {
       toast.error("Transcript text cannot be empty.");
       return;
@@ -93,7 +74,7 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
     startTransition(async () => {
       try {
         setSavingSegmentId(segmentId);
-        await updateTranscriptSegmentAction(meetingId, segmentId, text);
+        await updateTranscriptSegmentAction(meetingId, segmentId, { text, speaker_id: draft.speakerId });
         toast.success("Segment saved.");
         setEditingSegmentId(null);
         router.refresh();
@@ -105,25 +86,7 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
     });
   };
 
-  const renameSpeaker = (speakerId: string) => {
-    const displayName = (speakerDrafts[speakerId] ?? "").trim();
-    if (!displayName) {
-      toast.error("Speaker name cannot be empty.");
-      return;
-    }
-    startTransition(async () => {
-      try {
-        setRenamingSpeakerId(speakerId);
-        await renameSpeakerAction(meetingId, speakerId, displayName);
-        toast.success("Speaker renamed.");
-        router.refresh();
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to rename speaker.");
-      } finally {
-        setRenamingSpeakerId(null);
-      }
-    });
-  };
+
 
   const snapshotVersion = (changeNote: string) => {
     startTransition(async () => {
@@ -188,24 +151,28 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
                     speakerName={speakerName}
                     color={color}
                     isEditing={editingSegmentId === segment.id}
-                    draft={segmentDrafts[segment.id] ?? segment.text}
+                    draft={segmentDrafts[segment.id]?.text ?? segment.text}
+                    draftSpeakerId={segmentDrafts[segment.id]?.speakerId ?? segment.speaker_id}
+                    allSpeakers={transcript.speakers}
                     isSaving={savingSegmentId === segment.id}
                     onStartEdit={() => {
-                      // Close any previously open editor without saving
                       if (editingSegmentId && editingSegmentId !== segment.id) {
                         const original = transcript.segments.find((s) => s.id === editingSegmentId);
                         if (original) {
-                          setSegmentDrafts((prev) => ({ ...prev, [editingSegmentId]: original.text }));
+                          setSegmentDrafts((prev) => ({ ...prev, [editingSegmentId]: { text: original.text, speakerId: original.speaker_id } }));
                         }
                       }
                       setEditingSegmentId(segment.id);
                     }}
                     onDraftChange={(text) =>
-                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: text }))
+                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: { ...prev[segment.id], text } }))
+                    }
+                    onDraftSpeakerChange={(speakerId) =>
+                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: { ...prev[segment.id], speakerId } }))
                     }
                     onSave={() => saveSegment(segment.id)}
                     onCancel={() => {
-                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: segment.text }));
+                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: { text: segment.text, speakerId: segment.speaker_id } }));
                       setEditingSegmentId(null);
                     }}
                   />
@@ -227,19 +194,10 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
           <span>v{transcript.version_no}</span>
         </div>
 
-        <SpeakerPanel
-          speakers={transcript.speakers}
-          speakerDrafts={speakerDrafts}
-          speakerColors={speakerColors}
-          renamingSpeakerId={renamingSpeakerId}
-          onDraftChange={(id, name) => setSpeakerDrafts((prev) => ({ ...prev, [id]: name }))}
-          onRename={renameSpeaker}
-          onColorChange={(speakerId, colorId) =>
-            setSpeakerColors((prev) => ({ ...prev, [speakerId]: colorId }))
-          }
-        />
+
 
         <VersionPanel
+          meetingId={meetingId}
           versionNo={transcript.version_no}
           isCreating={isCreatingVersion}
           onSnapshot={snapshotVersion}

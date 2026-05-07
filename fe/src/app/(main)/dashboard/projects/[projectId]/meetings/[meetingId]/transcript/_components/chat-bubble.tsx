@@ -4,7 +4,8 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type { TranscriptSegment } from "@/server/api-actions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { TranscriptSegment, Speaker } from "@/server/api-actions";
 
 // ─── Speaker color palette ───────────────────────────────────────────────────
 
@@ -78,9 +79,12 @@ interface ChatBubbleProps {
   color: SpeakerColorConfig;
   isEditing: boolean;
   draft: string;
+  draftSpeakerId: string;
+  allSpeakers: Speaker[];
   isSaving: boolean;
   onStartEdit: () => void;
   onDraftChange: (text: string) => void;
+  onDraftSpeakerChange: (speakerId: string) => void;
   onSave: () => void;
   onCancel: () => void;
 }
@@ -91,9 +95,12 @@ export function ChatBubble({
   color,
   isEditing,
   draft,
+  draftSpeakerId,
+  allSpeakers,
   isSaving,
   onStartEdit,
   onDraftChange,
+  onDraftSpeakerChange,
   onSave,
   onCancel,
 }: ChatBubbleProps) {
@@ -123,7 +130,21 @@ export function ChatBubble({
           className={`rounded-2xl rounded-tl-none border border-border/50 px-4 py-2.5 ${color.bgClass} transition-colors duration-150 ${!isEditing ? "hover:brightness-110 cursor-text" : ""}`}
         >
           {isEditing ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <div className="w-[200px]">
+                <Select value={draftSpeakerId} onValueChange={onDraftSpeakerChange}>
+                  <SelectTrigger className="h-7 text-xs bg-transparent border-border/50">
+                    <SelectValue placeholder="Select speaker" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allSpeakers.map((sp) => (
+                      <SelectItem key={sp.id} value={sp.id} className="text-xs">
+                        {sp.display_name || sp.speaker_label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Textarea
                 value={draft}
                 onChange={(e) => onDraftChange(e.target.value)}

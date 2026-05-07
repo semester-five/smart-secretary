@@ -14,6 +14,7 @@ class SpeakerRead(BaseModel):
     meeting_id: uuid.UUID
     speaker_label: str
     display_name: str | None = None
+    color_label: str
     is_confirmed: bool
     created_at: datetime
     updated_at: datetime
@@ -25,8 +26,7 @@ class TranscriptSegmentRead(BaseModel):
     id: uuid.UUID
     meeting_id: uuid.UUID
     version_no: int
-    speaker_id: uuid.UUID | None = None
-    speaker_label: str
+    speaker_id: uuid.UUID
     start_ms: int
     end_ms: int
     text: str
@@ -44,11 +44,18 @@ class TranscriptRead(BaseModel):
 
 
 class TranscriptSegmentUpdate(BaseModel):
-    text: str = Field(min_length=1)
+    text: str | None = Field(default=None, min_length=1)
+    speaker_id: uuid.UUID | None = None
 
 
-class SpeakerRenameRequest(BaseModel):
+class SpeakerCreate(BaseModel):
     display_name: str = Field(min_length=1, max_length=255)
+    color_label: str = Field(min_length=1, max_length=50)
+
+
+class SpeakerUpdate(BaseModel):
+    display_name: str | None = Field(default=None, min_length=1, max_length=255)
+    color_label: str | None = Field(default=None, min_length=1, max_length=50)
 
 
 class MeetingVersionCreate(BaseModel):

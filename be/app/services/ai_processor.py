@@ -116,17 +116,16 @@ async def process_meeting_audio_task(meeting_id: str, job_id: str, current_user_
             db.add(version)
             await db.flush()
 
-        # 7. Merge kết quả & Lưu vào Database
-        print("Ghi nhận kết quả vào Database...")
+        # 7. Merge kết quả & Xác định Speaker
+        print("Xác định người nói cho từng đoạn...")
+        segment_speaker_assignments = []
         unique_speakers = set()
         
         for segment in whisper_segments:
             start_sec = segment.start
             end_sec = segment.end
-            text = segment.text.strip()
             midpoint = start_sec + (end_sec - start_sec) / 2
 
-            # Tìm xem tại thời điểm (midpoint) này, ai đang nói (theo Pyannote)
             assigned_speaker = "UNKNOWN"
             if diarization is not None:
                 for turn, _, speaker_label in diarization.itertracks(yield_label=True):
@@ -135,34 +134,51 @@ async def process_meeting_audio_task(meeting_id: str, job_id: str, current_user_
                         break
             
             unique_speakers.add(assigned_speaker)
+            segment_speaker_assignments.append({
+                "segment": segment,
+                "assigned_speaker": assigned_speaker
+            })
 
-            # Lưu từng đoạn Transcript
+        # 8. Lưu danh sách Speaker
+        print("Lưu thông tin người nói vào Database...")
+        speaker_colors = ["blue", "violet", "emerald", "rose", "amber", "cyan"]
+        speaker_map = {}
+        for idx, spk_label in enumerate(sorted(unique_speakers)):
+            color = speaker_colors[idx % len(speaker_colors)]
+            speaker_record = Speaker(
+                meeting_id=meeting_id,
+                speaker_label=spk_label,
+                display_name=spk_label,
+                color_label=color,
+                is_confirmed=False,
+                created_by=current_user_id,
+                updated_by=current_user_id
+            )
+            db.add(speaker_record)
+            speaker_map[spk_label] = speaker_record
+            
+        await db.flush()
+
+        # 9. Lưu từng đoạn Transcript với speaker_id
+        print("Ghi nhận transcript vào Database...")
+        for item in segment_speaker_assignments:
+            segment = item["segment"]
+            assigned_speaker = item["assigned_speaker"]
+            
             transcript_seg = TranscriptSegment(
                 meeting_id=meeting_id,
                 version_no=1,
-                speaker_label=assigned_speaker,
-                start_ms=int(start_sec * 1000),
-                end_ms=int(end_sec * 1000),
-                text=text,
+                speaker_id=speaker_map[assigned_speaker].id,
+                start_ms=int(segment.start * 1000),
+                end_ms=int(segment.end * 1000),
+                text=segment.text.strip(),
                 source="ai",
                 created_by=current_user_id,
                 updated_by=current_user_id
             )
             db.add(transcript_seg)
 
-        # 8. Lưu danh sách Speaker
-        for spk_label in unique_speakers:
-            speaker_record = Speaker(
-                meeting_id=meeting_id,
-                speaker_label=spk_label,
-                display_name=spk_label,
-                is_confirmed=False,
-                created_by=current_user_id,
-                updated_by=current_user_id
-            )
-            db.add(speaker_record)
-
-        # 9. Hoàn thành
+        # 10. Hoàn thành
         job.status = "completed"
         job.progress = 100
         job.finished_at = datetime.now(UTC)
