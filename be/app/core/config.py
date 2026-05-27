@@ -1,10 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # Database
+    DB_URL: str | None = None
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_USERNAME: str = "postgres"
@@ -28,19 +30,22 @@ class Settings(BaseSettings):
     # AI Config
     HF_TOKEN: str | None = None
 
-    @property
-    def async_database_url(self) -> str:
+    def _database_url(self, drivername: str) -> str:
+        if self.DB_URL:
+            return make_url(self.DB_URL).set(drivername=drivername).render_as_string(hide_password=False)
+
         return (
-            f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}"
+            f"{drivername}://{self.DB_USERNAME}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_DATABASE}"
         )
 
     @property
+    def async_database_url(self) -> str:
+        return self._database_url("postgresql+asyncpg")
+
+    @property
     def sync_database_url(self) -> str:
-        return (
-            f"postgresql+psycopg2://{self.DB_USERNAME}:{self.DB_PASSWORD}"
-            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_DATABASE}"
-        )
+        return self._database_url("postgresql+psycopg2")
 
 
 settings = Settings()
