@@ -32,7 +32,10 @@ class Settings(BaseSettings):
 
     def _database_url(self, drivername: str) -> str:
         if self.DB_URL:
-            return make_url(self.DB_URL).set(drivername=drivername).render_as_string(hide_password=False)
+            url = make_url(self.DB_URL).set(drivername=drivername)
+            if drivername == "postgresql+asyncpg":
+                url = url.update_query_dict({"prepared_statement_cache_size": "0"})
+            return url.render_as_string(hide_password=False)
 
         return (
             f"{drivername}://{self.DB_USERNAME}:{self.DB_PASSWORD}"
