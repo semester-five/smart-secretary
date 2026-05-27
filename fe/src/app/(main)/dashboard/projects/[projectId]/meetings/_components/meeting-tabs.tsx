@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Captions, CheckSquare, FileText, LayoutDashboard, Mic, Users } from "lucide-react";
+import {
+  Captions,
+  CheckSquare,
+  FileText,
+  LayoutDashboard,
+  Mic,
+  Users,
+} from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 
@@ -33,7 +40,9 @@ export function MeetingTabs({ tabs }: { readonly tabs: MeetingTab[] }) {
     <div className="border-b border-border mb-6">
       <nav className="-mb-px flex overflow-x-auto space-x-6" aria-label="Tabs">
         {tabs.map((tab) => {
-          const isActive = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+          const isActive = tab.exact
+            ? pathname === tab.href
+            : pathname.startsWith(tab.href);
           const Icon = ICON_MAP[tab.iconKey];
           return (
             <Link
@@ -48,7 +57,10 @@ export function MeetingTabs({ tabs }: { readonly tabs: MeetingTab[] }) {
               aria-current={isActive ? "page" : undefined}
             >
               <Icon
-                className={cn("size-4 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}
+                className={cn(
+                  "size-4 transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground",
+                )}
                 aria-hidden="true"
               />
               {tab.title}

@@ -1,6 +1,12 @@
 "use client";
 
-import { Ellipsis, Folder, Forward, type LucideIcon, Trash2 } from "lucide-react";
+import {
+  Ellipsis,
+  Folder,
+  Forward,
+  type LucideIcon,
+  Trash2,
+} from "@/lib/icons";
 
 import {
   DropdownMenu,
@@ -44,7 +50,10 @@ export function NavDocuments({
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuAction showOnHover className="rounded-sm data-[state=open]:bg-accent">
+                <SidebarMenuAction
+                  showOnHover
+                  className="rounded-sm data-[state=open]:bg-accent"
+                >
                   <Ellipsis />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>

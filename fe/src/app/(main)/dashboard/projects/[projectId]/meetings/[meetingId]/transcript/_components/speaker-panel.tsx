@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,9 @@ export function SpeakerPanel({
           <CardTitle className="text-sm font-semibold">Speakers</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-muted-foreground">No speakers detected yet.</p>
+          <p className="text-xs text-muted-foreground">
+            No speakers detected yet.
+          </p>
         </CardContent>
       </Card>
     );
@@ -48,13 +50,19 @@ export function SpeakerPanel({
       </CardHeader>
       <CardContent className="space-y-5">
         {speakers.map((speaker, idx) => {
-          const currentColorId = speakerColors[speaker.id] ?? SPEAKER_COLORS[idx % SPEAKER_COLORS.length].id;
-          const currentColor = SPEAKER_COLORS.find((c) => c.id === currentColorId) ?? SPEAKER_COLORS[0];
+          const currentColorId =
+            speakerColors[speaker.id] ??
+            SPEAKER_COLORS[idx % SPEAKER_COLORS.length].id;
+          const currentColor =
+            SPEAKER_COLORS.find((c) => c.id === currentColorId) ??
+            SPEAKER_COLORS[0];
 
           return (
             <div key={speaker.id} className="space-y-2">
               {/* Label */}
-              <p className="text-xs text-muted-foreground">{speaker.speaker_label}</p>
+              <p className="text-xs text-muted-foreground">
+                {speaker.speaker_label}
+              </p>
 
               {/* Color swatches */}
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -75,7 +83,9 @@ export function SpeakerPanel({
 
               {/* Name input + rename */}
               <div className="flex items-center gap-1.5">
-                <div className={`w-0.5 self-stretch rounded-full ${currentColor.accentBarClass}`} />
+                <div
+                  className={`w-0.5 self-stretch rounded-full ${currentColor.accentBarClass}`}
+                />
                 <Input
                   value={speakerDrafts[speaker.id] ?? ""}
                   onChange={(e) => onDraftChange(speaker.id, e.target.value)}
@@ -93,7 +103,11 @@ export function SpeakerPanel({
                   disabled={renamingSpeakerId === speaker.id}
                   onClick={() => onRename(speaker.id)}
                 >
-                  {renamingSpeakerId === speaker.id ? <Loader2 className="size-3 animate-spin" /> : "Rename"}
+                  {renamingSpeakerId === speaker.id ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    "Rename"
+                  )}
                 </Button>
               </div>
             </div>

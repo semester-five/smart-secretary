@@ -190,8 +190,8 @@ async def process_meeting_audio_task(
             midpoint = start_sec + (end_sec - start_sec) / 2
 
             assigned_speaker = "UNKNOWN"
-            if diarization is not None:
-                for turn, _, speaker_label in diarization.itertracks(yield_label=True):
+            if annotation is not None:
+                for turn, _, speaker_label in annotation.itertracks(yield_label=True):
                     if turn.start <= midpoint <= turn.end:
                         assigned_speaker = speaker_label
                         break

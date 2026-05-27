@@ -1,12 +1,27 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/icons";
 import { formatMs } from "./chat-bubble";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getTranscriptAction, type Transcript, type MeetingVersion } from "@/server/api-actions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  getTranscriptAction,
+  type Transcript,
+  type MeetingVersion,
+} from "@/server/api-actions";
 import { useState, useEffect } from "react";
 
 interface CompareModalProps {
@@ -16,7 +31,12 @@ interface CompareModalProps {
   versions: MeetingVersion[];
 }
 
-export function CompareModal({ meetingId, isOpen, onClose, versions }: CompareModalProps) {
+export function CompareModal({
+  meetingId,
+  isOpen,
+  onClose,
+  versions,
+}: CompareModalProps) {
   const [versionA, setVersionA] = useState<string>("");
   const [versionB, setVersionB] = useState<string>("");
 
@@ -39,7 +59,10 @@ export function CompareModal({ meetingId, isOpen, onClose, versions }: CompareMo
     enabled: !!versionB && isOpen,
   });
 
-  const renderTranscript = (transcript: Transcript | undefined, isLoading: boolean) => {
+  const renderTranscript = (
+    transcript: Transcript | undefined,
+    isLoading: boolean,
+  ) => {
     if (isLoading) {
       return (
         <div className="flex justify-center py-10">
@@ -48,21 +71,35 @@ export function CompareModal({ meetingId, isOpen, onClose, versions }: CompareMo
       );
     }
     if (!transcript) {
-      return <div className="p-4 text-center text-sm text-muted-foreground">Select a version</div>;
+      return (
+        <div className="p-4 text-center text-sm text-muted-foreground">
+          Select a version
+        </div>
+      );
     }
 
     return (
       <div className="space-y-4 p-4">
         {transcript.segments.map((seg) => {
-          const speaker = transcript.speakers.find((s) => s.id === seg.speaker_id);
-          const speakerName = speaker ? (speaker.display_name || speaker.speaker_label) : "Unknown Speaker";
+          const speaker = transcript.speakers.find(
+            (s) => s.id === seg.speaker_id,
+          );
+          const speakerName = speaker
+            ? speaker.display_name || speaker.speaker_label
+            : "Unknown Speaker";
           return (
             <div key={seg.id} className="text-sm">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-primary text-xs">{speakerName}</span>
-                <span className="text-[10px] text-muted-foreground">{formatMs(seg.start_ms)} - {formatMs(seg.end_ms)}</span>
+                <span className="font-semibold text-primary text-xs">
+                  {speakerName}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {formatMs(seg.start_ms)} - {formatMs(seg.end_ms)}
+                </span>
               </div>
-              <p className="leading-relaxed bg-muted/30 p-2 rounded-md">{seg.text}</p>
+              <p className="leading-relaxed bg-muted/30 p-2 rounded-md">
+                {seg.text}
+              </p>
             </div>
           );
         })}
@@ -98,7 +135,7 @@ export function CompareModal({ meetingId, isOpen, onClose, versions }: CompareMo
               {renderTranscript(transcriptA, loadingA)}
             </div>
           </div>
-          
+
           {/* Column B */}
           <div className="flex-1 flex flex-col">
             <div className="p-3 border-b bg-muted/10 flex items-center gap-3">

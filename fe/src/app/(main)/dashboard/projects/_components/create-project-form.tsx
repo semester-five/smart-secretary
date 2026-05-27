@@ -4,12 +4,18 @@ import { useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Plus } from "lucide-react";
+import { Plus } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createProjectAction } from "@/server/api-actions";
 
@@ -42,7 +48,9 @@ export function CreateProjectForm() {
         setStatus("active");
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to create project.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create project.",
+        );
       }
     });
   };
@@ -90,7 +98,10 @@ export function CreateProjectForm() {
       <div className="grid gap-3 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
         <div className="space-y-1">
           <span className="font-medium text-sm">Status</span>
-          <Select value={status} onValueChange={(value) => setStatus(value as "active" | "archived")}>
+          <Select
+            value={status}
+            onValueChange={(value) => setStatus(value as "active" | "archived")}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Choose status" />
             </SelectTrigger>
@@ -101,7 +112,12 @@ export function CreateProjectForm() {
           </Select>
         </div>
         <div className="flex justify-end">
-          <Button type="button" disabled={isPending} onClick={submit} className="w-full sm:w-auto">
+          <Button
+            type="button"
+            disabled={isPending}
+            onClick={submit}
+            className="w-full sm:w-auto"
+          >
             {isPending ? (
               "Creating..."
             ) : (

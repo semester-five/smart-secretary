@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Search } from "lucide-react";
+import { Search } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -103,10 +103,14 @@ export function SearchDialog({ isSuperuser }: { isSuperuser?: boolean }) {
                         onSelect={() => handleSelect(item.url)}
                         className="gap-2"
                       >
-                        {Icon && <Icon className="size-4 text-muted-foreground shrink-0" />}
+                        {Icon && (
+                          <Icon className="size-4 text-muted-foreground shrink-0" />
+                        )}
                         <span>{item.label}</span>
                         {item.parentLabel && (
-                          <span className="ml-auto text-xs text-muted-foreground opacity-70">{item.parentLabel}</span>
+                          <span className="ml-auto text-xs text-muted-foreground opacity-70">
+                            {item.parentLabel}
+                          </span>
                         )}
                       </CommandItem>
                     );

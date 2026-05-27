@@ -4,8 +4,7 @@
 
 /* Theme preset styles: these override CSS variables based on the selected data-theme-preset */
 @import "../styles/presets/brutalist.css";
-@import "../styles/presets/soft-pop.css";
-@import "../styles/presets/tangerine.css";
+/* Other presets are loaded on-demand to avoid shipping all theme CSS by default. */
 
 @custom-variant dark (&:is(.dark *));
 

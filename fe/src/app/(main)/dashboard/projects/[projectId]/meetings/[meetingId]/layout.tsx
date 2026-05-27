@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@/lib/icons";
 
 import { Badge } from "@/components/ui/badge";
 import { getMeetingByIdAction } from "@/server/api-actions";

@@ -1,10 +1,16 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { TranscriptSegment, Speaker } from "@/server/api-actions";
 
 // ─── Speaker color palette ───────────────────────────────────────────────────
@@ -109,19 +115,27 @@ export function ChatBubble({
       {/* Color dot */}
       <div className="flex flex-col items-center gap-1 pt-1 shrink-0">
         <div className={`size-2.5 rounded-full ${color.dotClass}`} />
-        {isEditing && <div className={`w-px flex-1 ${color.accentBarClass} opacity-30`} />}
+        {isEditing && (
+          <div className={`w-px flex-1 ${color.accentBarClass} opacity-30`} />
+        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 pb-1">
         {/* Speaker name + timestamp */}
         <div className="flex items-baseline gap-2 mb-1">
-          <span className={`text-xs font-semibold tracking-tight ${color.textClass}`}>{speakerName}</span>
+          <span
+            className={`text-xs font-semibold tracking-tight ${color.textClass}`}
+          >
+            {speakerName}
+          </span>
           <span className="text-xs text-muted-foreground/50">
             {formatMs(segment.start_ms)} – {formatMs(segment.end_ms)}
           </span>
           {segment.source === "ai" && (
-            <span className="text-[10px] text-muted-foreground/40 ml-auto">AI</span>
+            <span className="text-[10px] text-muted-foreground/40 ml-auto">
+              AI
+            </span>
           )}
         </div>
 
@@ -132,7 +146,10 @@ export function ChatBubble({
           {isEditing ? (
             <div className="space-y-3">
               <div className="w-[200px]">
-                <Select value={draftSpeakerId} onValueChange={onDraftSpeakerChange}>
+                <Select
+                  value={draftSpeakerId}
+                  onValueChange={onDraftSpeakerChange}
+                >
                   <SelectTrigger className="h-7 text-xs bg-transparent border-border/50">
                     <SelectValue placeholder="Select speaker" />
                   </SelectTrigger>
@@ -157,8 +174,17 @@ export function ChatBubble({
                 }}
               />
               <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/40">
-                <Button size="sm" className="h-6 px-2.5 text-xs" onClick={onSave} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="size-3 animate-spin" /> : "Save"}
+                <Button
+                  size="sm"
+                  className="h-6 px-2.5 text-xs"
+                  onClick={onSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    "Save"
+                  )}
                 </Button>
                 <Button
                   size="sm"
@@ -169,7 +195,9 @@ export function ChatBubble({
                 >
                   Cancel
                 </Button>
-                <span className="ml-auto text-[10px] text-muted-foreground/40">Ctrl+Enter</span>
+                <span className="ml-auto text-[10px] text-muted-foreground/40">
+                  Ctrl+Enter
+                </span>
               </div>
             </div>
           ) : (

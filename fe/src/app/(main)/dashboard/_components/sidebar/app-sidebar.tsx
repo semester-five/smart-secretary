@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Command } from "lucide-react";
+import { Command } from "@/lib/icons";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -39,7 +39,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const variant = isSynced ? sidebarVariant : props.variant;
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
 
-  const visibleSidebarItems = useNavigationItems({ isSuperuser: user?.is_superuser });
+  const visibleSidebarItems = useNavigationItems({
+    isSuperuser: user?.is_superuser,
+  });
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
@@ -49,7 +51,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/dashboard">
                 <Command />
-                <span className="font-semibold text-base">{APP_CONFIG.name}</span>
+                <span className="font-semibold text-base">
+                  {APP_CONFIG.name}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

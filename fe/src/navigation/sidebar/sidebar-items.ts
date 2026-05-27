@@ -1,4 +1,4 @@
-import { CircleUser, FolderKanban, type LucideIcon, Users } from "lucide-react";
+import { CircleUser, FolderKanban, type LucideIcon, Users } from "@/lib/icons";
 
 export interface NavSubItem {
   title: string;

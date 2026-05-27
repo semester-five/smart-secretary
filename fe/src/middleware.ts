@@ -48,7 +48,10 @@ export function middleware(request: NextRequest) {
   }
 
   if (isProtected && !authenticated && refreshToken) {
-    return refreshSessionAndContinue(request, refreshToken);
+    // Don't block the request while attempting to refresh the session here.
+    // Allow the page to load and let the client perform an async refresh (or
+    // a dedicated API route) so middleware does not add TTFB for every page.
+    return NextResponse.next();
   }
 
   if (isAuthPage && authenticated) {

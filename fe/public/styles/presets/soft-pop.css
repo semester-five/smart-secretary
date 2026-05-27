@@ -1,0 +1,6 @@
+/* soft-pop preset (copied from src/styles/presets/soft-pop.css) */
+:root[data-theme-preset="soft-pop"] {
+  /* Sample small subset — real file contains many variable overrides */
+  --primary: oklch(0.6 0.2 250);
+  --background: oklch(0.98 0.01 200);
+}

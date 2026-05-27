@@ -1,19 +1,38 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Calendar, Clock, PlayCircle, User } from "lucide-react";
+import { Calendar, Clock, PlayCircle, User } from "@/lib/icons";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProjectByIdAction, listProjectMeetingsAction } from "@/server/api-actions";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  getProjectByIdAction,
+  listProjectMeetingsAction,
+} from "@/server/api-actions";
 
-export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
   const project = await getProjectByIdAction(projectId).catch(() => null);
-  return { title: project ? `${project.name} - Smart Secretary` : "Project Details" };
+  return {
+    title: project ? `${project.name} - Smart Secretary` : "Project Details",
+  };
 }
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
 
   const project = await getProjectByIdAction(projectId).catch(() => null);
@@ -25,7 +44,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
-
       {project.cover_image_url ? (
         <div className="overflow-hidden rounded-xl border object-cover shadow-sm">
           {/* biome-ignore lint/performance/noImgElement: Cover images come from runtime-configured storage hostnames. */}
@@ -39,10 +57,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-6 shadow-sm">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">{project.name}</h1>
-          <p className="font-mono text-muted-foreground text-sm mt-1">Code: {project.code}</p>
+          <h1 className="font-semibold text-2xl tracking-tight">
+            {project.name}
+          </h1>
+          <p className="font-mono text-muted-foreground text-sm mt-1">
+            Code: {project.code}
+          </p>
         </div>
-        <Badge variant={project.status === "active" ? "default" : "secondary"} className="h-6 px-3">
+        <Badge
+          variant={project.status === "active" ? "default" : "secondary"}
+          className="h-6 px-3"
+        >
           {project.status}
         </Badge>
       </div>
@@ -54,7 +79,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <User className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="truncate font-mono text-sm text-muted-foreground" title={String(project.owner_id)}>
+            <div
+              className="truncate font-mono text-sm text-muted-foreground"
+              title={String(project.owner_id)}
+            >
               {project.owner_id}
             </div>
           </CardContent>
@@ -65,7 +93,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <Clock className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-xl">{new Date(project.created_at).toLocaleDateString()}</div>
+            <div className="font-bold text-xl">
+              {new Date(project.created_at).toLocaleDateString()}
+            </div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -82,7 +112,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Get started</CardTitle>
-          <CardDescription>Jump directly into what matters most for this project.</CardDescription>
+          <CardDescription>
+            Jump directly into what matters most for this project.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Link
@@ -93,8 +125,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               <PlayCircle className="size-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold group-hover:text-primary transition-colors">Go to Meetings</p>
-              <p className="mt-0.5 text-muted-foreground text-xs">Create, upload, and review your meeting records.</p>
+              <p className="font-semibold group-hover:text-primary transition-colors">
+                Go to Meetings
+              </p>
+              <p className="mt-0.5 text-muted-foreground text-xs">
+                Create, upload, and review your meeting records.
+              </p>
             </div>
           </Link>
         </CardContent>

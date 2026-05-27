@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,9 @@ export function AddCardForm({ status, onAdd, onCancel }: AddCardFormProps) {
           onClick={handleSubmit}
           disabled={!title.trim() || isSubmitting}
         >
-          {isSubmitting ? <Loader2 className="size-3 animate-spin mr-1" /> : null}
+          {isSubmitting ? (
+            <Loader2 className="size-3 animate-spin mr-1" />
+          ) : null}
           Add card
         </Button>
         <Button
