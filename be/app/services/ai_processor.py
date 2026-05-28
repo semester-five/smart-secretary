@@ -2,13 +2,33 @@ import tempfile
 import os
 import asyncio
 from datetime import UTC, datetime
+from pathlib import Path
 
 from faster_whisper import WhisperModel
+import huggingface_hub
+import numpy as np
 import torchaudio
 import torch
 
 if not hasattr(torchaudio, "set_audio_backend"):
     torchaudio.set_audio_backend = lambda *args, **kwargs: None
+if not hasattr(torchaudio, "get_audio_backend"):
+    torchaudio.get_audio_backend = lambda *args, **kwargs: "soundfile"
+if not hasattr(np, "NaN"):
+    np.NaN = np.nan
+
+_original_hf_hub_download = huggingface_hub.hf_hub_download
+
+
+def _hf_hub_download_compat(*args, **kwargs):
+    if "use_auth_token" in kwargs and "token" not in kwargs:
+        kwargs["token"] = kwargs.pop("use_auth_token")
+    else:
+        kwargs.pop("use_auth_token", None)
+    return _original_hf_hub_download(*args, **kwargs)
+
+
+huggingface_hub.hf_hub_download = _hf_hub_download_compat
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,10 +68,18 @@ def _initialize_models() -> None:
             from pyannote.audio import Pipeline
 
             print("Loading Pyannote Diarization [speaker-diarization-3.1]...")
-            diarization_pipeline = Pipeline.from_pretrained(
-                "pyannote/speaker-diarization-3.1",
-                token=settings.HF_TOKEN,
-            )
+            try:
+                diarization_pipeline = Pipeline.from_pretrained(
+                    "pyannote/speaker-diarization-3.1",
+                    token=settings.HF_TOKEN,
+                )
+            except TypeError as exc:
+                if "token" not in str(exc):
+                    raise
+                diarization_pipeline = Pipeline.from_pretrained(
+                    "pyannote/speaker-diarization-3.1",
+                    use_auth_token=settings.HF_TOKEN,
+                )
             if device == "cuda":
                 diarization_pipeline.to(torch.device("cuda"))
             print("✅ Pyannote loaded.")
@@ -75,6 +103,27 @@ def _get_best_speaker(annotation, start_sec: float, end_sec: float) -> str:
         if overlap > 0:
             scores[label] = scores.get(label, 0) + overlap
     return max(scores, key=scores.get) if scores else "UNKNOWN"
+
+
+def _get_audio_suffix(file_name: str, mime_type: str) -> str:
+    suffix = Path(file_name).suffix
+    if suffix:
+        return suffix
+    if "mpeg" in mime_type or "mp3" in mime_type:
+        return ".mp3"
+    if "wav" in mime_type or "wave" in mime_type:
+        return ".wav"
+    if "mp4" in mime_type or "m4a" in mime_type:
+        return ".m4a"
+    return ".wav"
+
+
+def _normalize_speaker_label(raw_label: str, speaker_order: dict[str, str]) -> str:
+    if raw_label == "UNKNOWN":
+        return raw_label
+    if raw_label not in speaker_order:
+        speaker_order[raw_label] = f"speaker {len(speaker_order) + 1:02d}"
+    return speaker_order[raw_label]
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +165,8 @@ async def process_meeting_audio_task(
         file_bytes = await storage_client.from_(settings.SUPABASE_BUCKET).download(
             meeting_file.storage_key
         )
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+        suffix = _get_audio_suffix(meeting_file.file_name, meeting_file.mime_type)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
             tmp_file.write(file_bytes)
             tmp_filepath = tmp_file.name
 
@@ -132,7 +182,9 @@ async def process_meeting_audio_task(
                 annotation = await asyncio.to_thread(
                     diarization_pipeline, tmp_filepath
                 )
-                print(f"✅ Diarization xong. Số speakers: {len(annotation.labels())}")
+                labels = annotation.labels()
+                turns_count = sum(1 for _ in annotation.itertracks(yield_label=True))
+                print(f"✅ Diarization xong. Số speakers: {len(labels)}, turns: {turns_count}")
             except Exception as exc:
                 annotation = None
                 print(f"⚠️  Diarization failed, fallback to UNKNOWN speaker: {exc}")
@@ -144,7 +196,6 @@ async def process_meeting_audio_task(
         segments_generator, info = await asyncio.to_thread(
             whisper_model.transcribe,
             tmp_filepath,
-            language="vi",
             beam_size=5,
             vad_filter=True,
             vad_parameters=dict(min_silence_duration_ms=500),
@@ -179,22 +230,51 @@ async def process_meeting_audio_task(
             db.add(version)
             await db.flush()
 
+        now = datetime.now(UTC)
+        existing_segments = (
+            await db.scalars(
+                select(TranscriptSegment).where(
+                    TranscriptSegment.meeting_id == meeting_id,
+                    TranscriptSegment.version_no == 1,
+                    TranscriptSegment.deleted_at.is_(None),
+                )
+            )
+        ).all()
+        for existing_segment in existing_segments:
+            existing_segment.deleted_at = now
+            existing_segment.updated_at = now
+            existing_segment.updated_by = current_user_id
+
+        existing_ai_speakers = (
+            await db.scalars(
+                select(Speaker).where(
+                    Speaker.meeting_id == meeting_id,
+                    Speaker.is_confirmed.is_(False),
+                    Speaker.deleted_at.is_(None),
+                )
+            )
+        ).all()
+        for existing_speaker in existing_ai_speakers:
+            existing_speaker.deleted_at = now
+            existing_speaker.updated_at = now
+            existing_speaker.updated_by = current_user_id
+
+        await db.flush()
+
         # 7. Merge kết quả & Xác định Speaker
         print("Xác định người nói cho từng đoạn...")
         segment_speaker_assignments = []
         unique_speakers = set()
+        speaker_order: dict[str, str] = {}
         
         for segment in whisper_segments:
             start_sec = segment.start
             end_sec = segment.end
-            midpoint = start_sec + (end_sec - start_sec) / 2
 
             assigned_speaker = "UNKNOWN"
             if annotation is not None:
-                for turn, _, speaker_label in annotation.itertracks(yield_label=True):
-                    if turn.start <= midpoint <= turn.end:
-                        assigned_speaker = speaker_label
-                        break
+                raw_speaker = _get_best_speaker(annotation, start_sec, end_sec)
+                assigned_speaker = _normalize_speaker_label(raw_speaker, speaker_order)
             
             unique_speakers.add(assigned_speaker)
             segment_speaker_assignments.append({
@@ -202,22 +282,42 @@ async def process_meeting_audio_task(
                 "assigned_speaker": assigned_speaker
             })
 
+        speaker_distribution = {
+            speaker: sum(1 for item in segment_speaker_assignments if item["assigned_speaker"] == speaker)
+            for speaker in sorted(unique_speakers)
+        }
+        print(f"Speaker assignment distribution: {speaker_distribution}")
+
         # 8. Lưu danh sách Speaker
         print("Lưu thông tin người nói vào Database...")
         speaker_colors = ["blue", "violet", "emerald", "rose", "amber", "cyan"]
         speaker_map = {}
         for idx, spk_label in enumerate(sorted(unique_speakers)):
             color = speaker_colors[idx % len(speaker_colors)]
-            speaker_record = Speaker(
-                meeting_id=meeting_id,
-                speaker_label=spk_label,
-                display_name=spk_label,
-                color_label=color,
-                is_confirmed=False,
-                created_by=current_user_id,
-                updated_by=current_user_id
+            speaker_record = await db.scalar(
+                select(Speaker).where(
+                    Speaker.meeting_id == meeting_id,
+                    Speaker.speaker_label == spk_label,
+                )
             )
-            db.add(speaker_record)
+            if speaker_record is None:
+                speaker_record = Speaker(
+                    meeting_id=meeting_id,
+                    speaker_label=spk_label,
+                    display_name=spk_label,
+                    color_label=color,
+                    is_confirmed=False,
+                    created_by=current_user_id,
+                    updated_by=current_user_id
+                )
+                db.add(speaker_record)
+            else:
+                if not speaker_record.is_confirmed:
+                    speaker_record.display_name = spk_label
+                    speaker_record.color_label = color
+                speaker_record.deleted_at = None
+                speaker_record.updated_at = datetime.now(UTC)
+                speaker_record.updated_by = current_user_id
             speaker_map[spk_label] = speaker_record
             
         await db.flush()
