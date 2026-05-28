@@ -3,11 +3,11 @@ from datetime import UTC, datetime
 from math import ceil
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal, get_db
 from app.core.deps import CurrentUser
 from app.models.project import (
     ActionItem,
@@ -39,6 +39,7 @@ from app.schemas.meeting_intelligence import (
     TranscriptSegmentUpdate,
 )
 from app.schemas.project import MeetingRead
+from app.services.summarization_processor import process_meeting_summary_task
 
 router = APIRouter(prefix="/meetings", tags=["meeting-intelligence"])
 DBSession = Annotated[AsyncSession, Depends(get_db)]
@@ -598,6 +599,7 @@ async def create_meeting_version(
 async def generate_summary(
     meeting_id: uuid.UUID,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     db: DBSession,
 ) -> ProcessingJobRead:
     meeting = await _get_meeting_or_404(db, meeting_id)
@@ -615,11 +617,12 @@ async def generate_summary(
     if existing_job:
         return ProcessingJobRead.model_validate(existing_job)
 
+    version_no = await _resolve_version_no(db, meeting_id, "latest")
     now = datetime.now(UTC)
     job = ProcessingJob(
         meeting_id=meeting_id,
         job_type="summary",
-        provider="internal",
+        provider="gemini",
         status="queued",
         progress=0,
         created_at=now,
@@ -634,6 +637,20 @@ async def generate_summary(
 
     await db.commit()
     await db.refresh(job)
+    job_id = str(job.id)
+    user_id = str(current_user.id)
+
+    async def task_wrapper() -> None:
+        async with AsyncSessionLocal() as session:
+            await process_meeting_summary_task(
+                str(meeting_id),
+                job_id,
+                user_id,
+                session,
+                version_no,
+            )
+
+    background_tasks.add_task(task_wrapper)
     return ProcessingJobRead.model_validate(job)
 
 

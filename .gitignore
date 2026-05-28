@@ -62,3 +62,6 @@ __pycache__/
 .pytest_cache/
 
 docs
+
+.vscode/
+*.ipynb

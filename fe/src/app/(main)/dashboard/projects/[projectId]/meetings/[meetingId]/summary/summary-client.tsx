@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   createMeetingVersionAction,
   generateSummaryAction,
+  getMeetingStatusAction,
   type MeetingSummary,
   updateMeetingSummaryAction,
 } from "@/server/api-actions";
@@ -47,6 +48,23 @@ export function SummaryClient({
         setActiveAction("generate");
         await generateSummaryAction(meetingId);
         toast.success("Summary generation has been queued.");
+        const poll = window.setInterval(async () => {
+          try {
+            const status = await getMeetingStatusAction(meetingId);
+            const latestJob = status.latest_job;
+            if (latestJob?.job_type !== "summary") return;
+            if (latestJob.status === "completed") {
+              window.clearInterval(poll);
+              router.refresh();
+            }
+            if (latestJob.status === "failed") {
+              window.clearInterval(poll);
+              toast.error(latestJob.error_message ?? "Summary generation failed.");
+            }
+          } catch {
+            window.clearInterval(poll);
+          }
+        }, 2500);
       } catch (error) {
         toast.error(
           error instanceof Error
