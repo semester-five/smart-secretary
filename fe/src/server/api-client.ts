@@ -6,6 +6,13 @@ const REFRESH_TOKEN_COOKIE = "refresh_token";
 const ACCESS_TOKEN_MAX_AGE_SECONDS = 30 * 60;
 const REFRESH_TOKEN_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
+export class UnauthorizedError extends Error {
+  constructor(message = "Session expired. Please login again.") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
 export type TokenResponse = {
   access_token: string;
   refresh_token: string;
@@ -108,6 +115,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}, 
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
+    if (response.status === 401) {
+      await clearAuthCookies();
+      throw new UnauthorizedError(getErrorMessage(payload, "Session expired. Please login again."));
+    }
     throw new Error(getErrorMessage(payload, `Request failed with status ${response.status}`));
   }
 

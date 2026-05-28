@@ -4,10 +4,18 @@ import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import {
+  SIDEBAR_COLLAPSIBLE_VALUES,
+  SIDEBAR_VARIANT_VALUES,
+} from "@/lib/preferences/layout";
 import { cn } from "@/lib/utils";
 import { getCurrentUserAction } from "@/server/api-actions";
+import { getCurrentUserOrRedirectLogin } from "@/server/auth-actions";
 import { getPreference } from "@/server/server-actions";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
@@ -15,13 +23,15 @@ import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
-export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function Layout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
   const [variant, collapsible, currentUser] = await Promise.all([
     getPreference("sidebar_variant", SIDEBAR_VARIANT_VALUES, "inset"),
     getPreference("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),
-    getCurrentUserAction().catch(() => null),
+    getCurrentUserOrRedirectLogin(() => getCurrentUserAction()),
   ]);
 
   const sidebarUsers = currentUser
@@ -38,7 +48,11 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar variant={variant} collapsible={collapsible} user={currentUser ?? undefined} />
+      <AppSidebar
+        variant={variant}
+        collapsible={collapsible}
+        user={currentUser ?? undefined}
+      />
       <SidebarInset
         className={cn(
           "[html[data-content-layout=centered]_&]:mx-auto! [html[data-content-layout=centered]_&]:max-w-screen-2xl!",
@@ -66,7 +80,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-2">
               <LayoutControls />
               <ThemeSwitcher />
-              {sidebarUsers.length > 0 ? <AccountSwitcher users={sidebarUsers} /> : null}
+              {sidebarUsers.length > 0 ? (
+                <AccountSwitcher users={sidebarUsers} />
+              ) : null}
             </div>
           </div>
         </header>

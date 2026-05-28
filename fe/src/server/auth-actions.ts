@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   apiRequest,
   clearAuthCookies,
+  UnauthorizedError,
   refreshAccessTokenIfPossible,
   setAuthCookies,
   type TokenResponse,
@@ -75,6 +76,18 @@ export async function getAccessToken(): Promise<string | undefined> {
   const existing = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
   if (existing) return existing;
   return refreshAccessTokenIfPossible();
+}
+
+export async function getCurrentUserOrRedirectLogin<T>(loader: () => Promise<T>): Promise<T | null> {
+  try {
+    return await loader();
+  } catch (error) {
+    if (error instanceof UnauthorizedError || (error instanceof Error && error.name === "UnauthorizedError")) {
+      redirect("/auth/v1/login");
+    }
+
+    return null;
+  }
 }
 
 export async function refreshSessionAction(): Promise<AuthResult> {
