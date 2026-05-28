@@ -1,9 +1,13 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=("../.env", ".env", "be/.env"),
+        extra="ignore",
+    )
 
     # Database
     DB_URL: str | None = None
@@ -29,6 +33,17 @@ class Settings(BaseSettings):
 
     # AI Config
     HF_TOKEN: str | None = None
+    GEMINI_API_KEY: str | None = None
+    GEMINI_SUMMARY_MODEL: str = "gemini-2.5-flash"
+    SUMMARY_LANGUAGE: str = "auto"
+
+    @field_validator("GEMINI_API_KEY", mode="before")
+    @classmethod
+    def _strip_optional_secret(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
     def _database_url(self, drivername: str) -> str:
         if self.DB_URL:
