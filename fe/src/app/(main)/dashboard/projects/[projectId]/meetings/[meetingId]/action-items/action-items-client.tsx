@@ -3,25 +3,24 @@
 import { useCallback, useRef, useState } from "react";
 
 import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  type DragEndEvent,
-  type DragStartEvent,
   closestCenter,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
+import type { ActionItem, ActionItemUpdatePayload } from "@/server/api-actions";
 import {
-  type ActionItem,
-  type ActionItemUpdatePayload,
-  createActionItemAction,
-  deleteActionItemAction,
-  updateActionItemAction,
-} from "@/server/api-actions";
+  clientCreateActionItem,
+  clientDeleteActionItem,
+  clientUpdateActionItem,
+} from "@/data/api-client";
 
 import { ActionItemCard } from "./_components/action-item-card";
 import { ActionItemDetailSheet } from "./_components/action-item-detail-sheet";
@@ -44,10 +43,7 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
   );
 
   // Group items by status
-  const columnItems = useCallback(
-    (status: ActionItem["status"]) => items.filter((i) => i.status === status),
-    [items],
-  );
+  const columnItems = useCallback((status: ActionItem["status"]) => items.filter((i) => i.status === status), [items]);
 
   // Drag start
   const handleDragStart = (event: DragStartEvent) => {
@@ -61,7 +57,9 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
     const { active, over } = event;
     setActiveItem(null);
     // Reset drag flag after a short delay so the card onClick doesn't fire
-    setTimeout(() => { didDragRef.current = false; }, 0);
+    setTimeout(() => {
+      didDragRef.current = false;
+    }, 0);
 
     if (!over || active.id === over.id) return;
 
@@ -100,7 +98,7 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
     // If status changed, persist via API
     if (!sameColumn) {
       try {
-        await updateActionItemAction(meetingId, activeId, { status: targetStatus });
+        await clientUpdateActionItem(meetingId, activeId, { status: targetStatus });
         toast.success("Item moved.");
       } catch {
         setItems(initialItems);
@@ -110,19 +108,16 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
   };
 
   // Card click – only open detail if we didn't just drag
-  const handleCardClick = useCallback(
-    (item: ActionItem) => {
-      if (!didDragRef.current) {
-        setSelectedItem(item);
-      }
-    },
-    [],
-  );
+  const handleCardClick = useCallback((item: ActionItem) => {
+    if (!didDragRef.current) {
+      setSelectedItem(item);
+    }
+  }, []);
 
   // Add card from inline form
   const handleAddCard = async (title: string, status: ActionItem["status"]) => {
     try {
-      const newItem = await createActionItemAction(meetingId, {
+      const newItem = await clientCreateActionItem(meetingId, {
         title,
         status,
         priority: "medium",
@@ -136,15 +131,13 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
 
   // Update from detail sheet
   const handleUpdate = async (id: string, payload: ActionItemUpdatePayload) => {
-    const updated = await updateActionItemAction(meetingId, id, payload);
+    const updated = await clientUpdateActionItem(meetingId, id, payload);
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
-    // Also update selectedItem to reflect new data
     setSelectedItem(updated);
   };
 
-  // Delete from detail sheet
   const handleDelete = async (id: string) => {
-    await deleteActionItemAction(meetingId, id);
+    await clientDeleteActionItem(meetingId, id);
     setItems((prev) => prev.filter((i) => i.id !== id));
     toast.success("Action item deleted.");
   };

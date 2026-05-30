@@ -1,21 +1,13 @@
 import { redirect } from "next/navigation";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { getCurrentUserAction } from "@/server/api-actions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUserOrRedirectLogin } from "@/server/auth-actions";
+import { getCurrentUser } from "@/server/queries/user-queries";
 
 import { UpdateProfileForm } from "./_components/update-profile-form";
 
 export default async function ProfilePage() {
-  const currentUser = await getCurrentUserOrRedirectLogin(() =>
-    getCurrentUserAction(),
-  );
+  const currentUser = await getCurrentUserOrRedirectLogin(() => getCurrentUser());
 
   if (!currentUser) {
     redirect("/auth/v1/login");
@@ -25,9 +17,7 @@ export default async function ProfilePage() {
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
       <div>
         <h1 className="font-semibold text-2xl">Profile</h1>
-        <p className="text-muted-foreground text-sm">
-          Manage your display name and avatar.
-        </p>
+        <p className="text-muted-foreground text-sm">Manage your display name and avatar.</p>
       </div>
 
       <Card className="shadow-sm">

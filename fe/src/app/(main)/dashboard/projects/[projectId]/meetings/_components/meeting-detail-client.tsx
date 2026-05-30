@@ -5,28 +5,24 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AudioLines, FileAudio, Loader2, RefreshCw, Upload } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import {
-  getMeetingStatusAction,
-  type MeetingDetail,
-  type MeetingFile,
-  type MeetingStatus,
-  processMeetingAction,
-  uploadMeetingFileAction,
+import { AudioLines, FileAudio, Loader2, RefreshCw, Upload } from "@/lib/icons";
+import type {
+  MeetingDetail,
+  MeetingFile,
+  MeetingStatus,
 } from "@/server/api-actions";
+import {
+  clientGetMeetingStatus,
+  clientProcessMeeting,
+  clientUploadMeetingFile,
+} from "@/data/api-client";
 
 const MAX_AUDIO_SIZE = 200 * 1024 * 1024;
 
@@ -43,18 +39,20 @@ export function MeetingDetailClient({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Polling via React Query
+  // Polling via React Query — uses client-side fetch through /api/client proxy.
+  // Polls every 5 seconds to check processing status without full page reload.
   const { data: status } = useQuery({
     queryKey: ["meeting-status", meeting.id],
-    queryFn: () => getMeetingStatusAction(meeting.id),
-    refetchInterval: 5000,
+    queryFn: () => clientGetMeetingStatus(meeting.id),
+    refetchInterval: (q) =>
+      q.state.data?.meeting_status === "processing" ? 3000 : 10000,
     initialData: initialStatus,
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const uploaded = await uploadMeetingFileAction(meeting.id, file);
-      return uploaded;
+      const uploaded = await clientUploadMeetingFile(meeting.id, file);
+      return uploaded as MeetingFile;
     },
     onSuccess: (uploaded) => {
       setFiles((current) => [...current, uploaded]);
@@ -69,24 +67,18 @@ export function MeetingDetailClient({
       router.refresh();
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload meeting file.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to upload meeting file.");
     },
   });
 
   const processMutation = useMutation({
-    mutationFn: () => processMeetingAction(meeting.id),
+    mutationFn: () => clientProcessMeeting(meeting.id),
     onSuccess: (nextStatus) => {
       queryClient.setQueryData(["meeting-status", meeting.id], nextStatus);
       toast.success("Processing queued.");
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to queue processing.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to queue processing.");
     },
   });
 
@@ -119,9 +111,7 @@ export function MeetingDetailClient({
               <AudioLines className="size-5" />
               Upload meeting audio
             </CardTitle>
-            <CardDescription>
-              Multipart upload with server-side size validation.
-            </CardDescription>
+            <CardDescription>Multipart upload with server-side size validation.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -147,9 +137,7 @@ export function MeetingDetailClient({
                       {selectedFile.name}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground font-medium">
-                      Click to select an audio file
-                    </span>
+                    <span className="text-muted-foreground font-medium">Click to select an audio file</span>
                   )}
                 </label>
               </div>
@@ -177,10 +165,7 @@ export function MeetingDetailClient({
               <Button
                 type="button"
                 variant="outline"
-                disabled={
-                  processMutation.isPending ||
-                  status.meeting_status === "processing"
-                }
+                disabled={processMutation.isPending || status.meeting_status === "processing"}
                 onClick={processMeeting}
                 className="transition-all hover:bg-muted/50"
               >
@@ -217,25 +202,16 @@ export function MeetingDetailClient({
                       <FileAudio className="size-5 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <p
-                        className="font-medium truncate"
-                        title={file.file_name}
-                      >
+                      <p className="font-medium truncate" title={file.file_name}>
                         {file.file_name}
                       </p>
                       <p className="text-muted-foreground text-xs mt-0.5">
-                        {(file.file_size_bytes / (1024 * 1024)).toFixed(2)} MB
-                        &middot; {file.mime_type}
+                        {(file.file_size_bytes / (1024 * 1024)).toFixed(2)} MB &middot; {file.mime_type}
                       </p>
                     </div>
                   </div>
                   {file.file_url ? (
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 w-full sm:w-auto"
-                    >
+                    <Button asChild variant="outline" size="sm" className="shrink-0 w-full sm:w-auto">
                       <a href={file.file_url} target="_blank" rel="noreferrer">
                         Download
                       </a>
@@ -246,9 +222,7 @@ export function MeetingDetailClient({
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-lg bg-muted/10">
                 <FileAudio className="mb-2 size-6 text-muted-foreground/50" />
-                <p className="text-muted-foreground text-sm font-medium">
-                  No files uploaded yet
-                </p>
+                <p className="text-muted-foreground text-sm font-medium">No files uploaded yet</p>
               </div>
             )}
           </CardContent>
@@ -270,29 +244,20 @@ export function MeetingDetailClient({
                         ? "default"
                         : "secondary"
                 }
-                className={
-                  status.meeting_status === "processing" ? "animate-pulse" : ""
-                }
+                className={status.meeting_status === "processing" ? "animate-pulse" : ""}
               >
                 {status.meeting_status}
               </Badge>
             </CardTitle>
-            <CardDescription>
-              Automatically synced from the server.
-            </CardDescription>
+            <CardDescription>Automatically synced from the server.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">Job progress</span>
-                <span className="text-muted-foreground capitalize">
-                  {status.latest_job?.status ?? "idle"}
-                </span>
+                <span className="text-muted-foreground capitalize">{status.latest_job?.status ?? "idle"}</span>
               </div>
-              <Progress
-                value={status.latest_job?.progress ?? 0}
-                className="h-2"
-              />
+              <Progress value={status.latest_job?.progress ?? 0} className="h-2" />
             </div>
             <div className="grid gap-3 text-sm">
               <div className="flex items-center justify-between rounded-lg border border-border bg-muted/10 p-3 shadow-sm">
@@ -301,15 +266,11 @@ export function MeetingDetailClient({
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border bg-muted/10 p-3 shadow-sm">
                 <span className="text-muted-foreground">Latest job</span>
-                <span className="font-medium capitalize">
-                  {status.latest_job?.job_type ?? "none"}
-                </span>
+                <span className="font-medium capitalize">{status.latest_job?.job_type ?? "none"}</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border bg-muted/10 p-3 shadow-sm">
                 <span className="text-muted-foreground">Updated</span>
-                <span className="font-medium">
-                  {new Date(status.updated_at).toLocaleString()}
-                </span>
+                <span className="font-medium">{new Date(status.updated_at).toLocaleString()}</span>
               </div>
             </div>
             <Button
@@ -318,10 +279,7 @@ export function MeetingDetailClient({
               size="sm"
               className="w-full sm:w-auto gap-2 transition-all hover:bg-muted/50"
               onClick={processMeeting}
-              disabled={
-                processMutation.isPending ||
-                status.meeting_status === "processing"
-              }
+              disabled={processMutation.isPending || status.meeting_status === "processing"}
             >
               {processMutation.isPending ? (
                 <Loader2 className="size-3.5 animate-spin" />

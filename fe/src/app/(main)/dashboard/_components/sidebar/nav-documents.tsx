@@ -1,14 +1,6 @@
 "use client";
 
 import {
-  Ellipsis,
-  Folder,
-  Forward,
-  type LucideIcon,
-  Trash2,
-} from "@/lib/icons";
-
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -24,6 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Ellipsis, Folder, Forward, type LucideIcon, Trash2 } from "@/lib/icons";
 
 export function NavDocuments({
   items,
@@ -50,10 +43,7 @@ export function NavDocuments({
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuAction
-                  showOnHover
-                  className="rounded-sm data-[state=open]:bg-accent"
-                >
+                <SidebarMenuAction showOnHover className="rounded-sm data-[state=open]:bg-accent">
                   <Ellipsis />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>

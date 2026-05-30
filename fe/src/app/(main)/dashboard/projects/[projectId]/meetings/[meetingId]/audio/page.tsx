@@ -1,13 +1,16 @@
 import { notFound } from "next/navigation";
 
-import { getMeetingByIdAction, getMeetingStatusAction } from "@/server/api-actions";
+import { getMeetingById, getMeetingStatus } from "@/server/queries/meeting-queries";
 
 import { MeetingDetailClient } from "../../_components/meeting-detail-client";
 
 export async function generateMetadata({ params }: { params: Promise<{ projectId: string; meetingId: string }> }) {
   const { meetingId } = await params;
-  const meeting = await getMeetingByIdAction(meetingId).catch(() => null);
-  return { title: meeting ? `Audio: ${meeting.title} - Smart Secretary` : "Meeting Audio" };
+  // getMeetingById uses React cache() — deduplicated with the page component below.
+  const meeting = await getMeetingById(meetingId).catch(() => null);
+  return {
+    title: meeting ? `Audio: ${meeting.title} - Smart Secretary` : "Meeting Audio",
+  };
 }
 
 export default async function MeetingAudioPage({
@@ -17,12 +20,16 @@ export default async function MeetingAudioPage({
 }) {
   const { meetingId } = await params;
 
-  const meeting = await getMeetingByIdAction(meetingId).catch(() => null);
+  // Run in parallel; getMeetingById is deduped with generateMetadata and layout.
+  const [meeting, status] = await Promise.all([
+    getMeetingById(meetingId).catch(() => null),
+    getMeetingStatus(meetingId).catch(() => null),
+  ]);
+
   if (!meeting) {
     notFound();
   }
 
-  const status = await getMeetingStatusAction(meetingId).catch(() => null);
   if (!status) {
     notFound();
   }

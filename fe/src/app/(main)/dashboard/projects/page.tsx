@@ -1,25 +1,22 @@
-import Link from "next/link";
 import Image from "next/image";
-
-import { Folder } from "@/lib/icons";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { listProjectsAction } from "@/server/api-actions";
+import { Folder } from "@/lib/icons";
+import { listProjects } from "@/server/queries/project-queries";
 
 export const metadata = {
   title: "Projects - Smart Secretary",
 };
 
 export default async function ProjectsPage() {
-  const projects = await listProjectsAction().catch(() => []);
+  const projects = await listProjects().catch(() => []);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
       <div>
         <h1 className="font-semibold text-2xl">Projects</h1>
-        <p className="text-muted-foreground text-sm">
-          Explore and manage all initialized workspaces.
-        </p>
+        <p className="text-muted-foreground text-sm">Explore and manage all initialized workspaces.</p>
       </div>
 
       {projects.length > 0 ? (
@@ -48,25 +45,13 @@ export default async function ProjectsPage() {
               <div className="flex flex-1 flex-col p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-semibold text-lg tracking-tight">
-                      {project.name}
-                    </h3>
-                    <p className="text-muted-foreground text-xs font-mono">
-                      {project.code}
-                    </p>
+                    <h3 className="font-semibold text-lg tracking-tight">{project.name}</h3>
+                    <p className="text-muted-foreground text-xs font-mono">{project.code}</p>
                   </div>
-                  <Badge
-                    variant={
-                      project.status === "active" ? "default" : "secondary"
-                    }
-                  >
-                    {project.status}
-                  </Badge>
+                  <Badge variant={project.status === "active" ? "default" : "secondary"}>{project.status}</Badge>
                 </div>
                 {project.description ? (
-                  <p className="mt-4 line-clamp-2 text-sm text-muted-foreground">
-                    {project.description}
-                  </p>
+                  <p className="mt-4 line-clamp-2 text-sm text-muted-foreground">{project.description}</p>
                 ) : null}
               </div>
             </Link>
@@ -76,9 +61,7 @@ export default async function ProjectsPage() {
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed p-10 text-center animate-in fade-in zoom-in-95">
           <Folder className="mb-4 size-10 text-muted-foreground" />
           <h3 className="font-semibold text-lg">No projects found</h3>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Get started by creating a new project workspace.
-          </p>
+          <p className="mt-1 text-muted-foreground text-sm">Get started by creating a new project workspace.</p>
           <Link
             href="/dashboard/projects/create"
             className="mt-6 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 
-import { Plus, Search, Trash2, Users } from "@/lib/icons";
 import { toast } from "sonner";
 
 import {
@@ -26,36 +25,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Search, Trash2, Users } from "@/lib/icons";
 import type { ProjectMemberListItem } from "@/server/api-actions";
-import {
-  addProjectMemberAction,
-  listProjectMembersAction,
-  removeProjectMemberAction,
-} from "@/server/api-actions";
+import { addProjectMemberAction, listProjectMembersAction, removeProjectMemberAction } from "@/server/api-actions";
 
 const PAGE_SIZE = 10;
 
@@ -63,17 +40,14 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
   const [members, setMembers] = useState<ProjectMemberListItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [roleFilter, setRoleFilter] = useState<
-    "all" | "owner" | "editor" | "viewer"
-  >("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "owner" | "editor" | "viewer">("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalMembers, setTotalMembers] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [memberRole, setMemberRole] = useState<"editor" | "viewer">("viewer");
-  const [memberToDelete, setMemberToDelete] =
-    useState<ProjectMemberListItem | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<ProjectMemberListItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -96,9 +70,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
       setTotalPages(response.total_pages);
       setTotalMembers(response.total);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load members.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load members.");
     } finally {
       setIsLoading(false);
     }
@@ -132,9 +104,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
         await fetchMembers(1, searchTerm, roleFilter);
         setPage(1);
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to add member.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to add member.");
       }
     });
   };
@@ -151,9 +121,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
         setMemberToDelete(null);
         await fetchMembers(page, searchTerm, roleFilter);
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to remove member.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to remove member.");
       }
     });
   };
@@ -163,10 +131,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
       <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm md:flex-row md:items-end md:justify-between">
         <div className="grid flex-1 gap-3 md:grid-cols-[1fr_180px_auto]">
           <div>
-            <label
-              className="mb-1 block font-medium text-sm"
-              htmlFor="member-search"
-            >
+            <label className="mb-1 block font-medium text-sm" htmlFor="member-search">
               Search member
             </label>
             <div className="relative">
@@ -184,10 +149,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
             </div>
           </div>
           <div>
-            <label
-              className="mb-1 block font-medium text-sm"
-              htmlFor="member-role-filter"
-            >
+            <label className="mb-1 block font-medium text-sm" htmlFor="member-role-filter">
               Role
             </label>
             <Select
@@ -209,12 +171,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
             </Select>
           </div>
           <div className="flex items-end justify-center md:justify-start">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onSearchSubmit}
-              className="min-w-20"
-            >
+            <Button type="button" variant="outline" onClick={onSearchSubmit} className="min-w-20">
               Search
             </Button>
           </div>
@@ -228,9 +185,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add member to project</DialogTitle>
-              <DialogDescription>
-                Add a user by email with editor or viewer role.
-              </DialogDescription>
+              <DialogDescription>Add a user by email with editor or viewer role.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -249,12 +204,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
                 <label className="font-medium text-sm" htmlFor="member-role">
                   Role
                 </label>
-                <Select
-                  value={memberRole}
-                  onValueChange={(value) =>
-                    setMemberRole(value as "editor" | "viewer")
-                  }
-                >
+                <Select value={memberRole} onValueChange={(value) => setMemberRole(value as "editor" | "viewer")}>
                   <SelectTrigger id="member-role">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -266,11 +216,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsAddDialogOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="button" disabled={isPending} onClick={onAddMember}>
@@ -337,17 +283,11 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
               </TableRow>
             ) : (
               members.map((member) => (
-                <TableRow
-                  key={member.id}
-                  className="transition-colors hover:bg-muted/50"
-                >
+                <TableRow key={member.id} className="transition-colors hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="size-8">
-                        <AvatarImage
-                          src={member.user_avatar_url ?? undefined}
-                          alt={member.user_full_name}
-                        />
+                        <AvatarImage src={member.user_avatar_url ?? undefined} alt={member.user_full_name} />
                         <AvatarFallback className="text-[10px] font-medium uppercase bg-primary/10 text-primary">
                           {member.user_full_name
                             ?.split(" ")
@@ -357,12 +297,8 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {member.user_full_name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {member.user_email}
-                        </span>
+                        <span className="font-medium text-sm">{member.user_full_name}</span>
+                        <span className="text-xs text-muted-foreground">{member.user_email}</span>
                       </div>
                     </div>
                   </TableCell>
@@ -375,9 +311,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
                       <Badge variant="outline">Viewer</Badge>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {new Date(member.created_at).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       type="button"
@@ -415,9 +349,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
               type="button"
               variant="outline"
               size="sm"
-              disabled={
-                isPending || isLoading || totalPages === 0 || page >= totalPages
-              }
+              disabled={isPending || isLoading || totalPages === 0 || page >= totalPages}
               onClick={() => setPage((prev) => prev + 1)}
             >
               Next
@@ -426,10 +358,7 @@ export function ManageMembersForm({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <AlertDialog
-        open={memberToDelete !== null}
-        onOpenChange={(open) => !open && setMemberToDelete(null)}
-      >
+      <AlertDialog open={memberToDelete !== null} onOpenChange={(open) => !open && setMemberToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete member</AlertDialogTitle>

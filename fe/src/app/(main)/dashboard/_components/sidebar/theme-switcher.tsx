@@ -1,8 +1,7 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "@/lib/icons";
-
 import { Button } from "@/components/ui/button";
+import { Monitor, Moon, Sun } from "@/lib/icons";
 import { persistPreference } from "@/lib/preferences/preferences-storage";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -21,11 +20,7 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <Button
-      size="icon"
-      onClick={cycleTheme}
-      aria-label={`Current theme: ${themeMode}. Click to cycle themes`}
-    >
+    <Button size="icon" onClick={cycleTheme} aria-label={`Current theme: ${themeMode}. Click to cycle themes`}>
       {/* SYSTEM */}
       <Monitor className="hidden [html[data-theme-mode=system]_&]:block" />
 

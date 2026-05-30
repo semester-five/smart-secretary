@@ -2,22 +2,15 @@
 
 import { useState } from "react";
 
-import { Loader2 } from "@/lib/icons";
+import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
+import { Clock, Loader2 } from "@/lib/icons";
 import { getMeetingVersionsAction } from "@/server/api-actions";
+
 import { CompareModal } from "./compare-modal";
-import { Clock } from "@/lib/icons";
 
 interface VersionPanelProps {
   meetingId: string;
@@ -26,12 +19,7 @@ interface VersionPanelProps {
   onSnapshot: (changeNote: string) => void;
 }
 
-export function VersionPanel({
-  meetingId,
-  versionNo,
-  isCreating,
-  onSnapshot,
-}: VersionPanelProps) {
+export function VersionPanel({ meetingId, versionNo, isCreating, onSnapshot }: VersionPanelProps) {
   const [changeNote, setChangeNote] = useState("");
   const [isCompareOpen, setIsCompareOpen] = useState(false);
 
@@ -48,12 +36,8 @@ export function VersionPanel({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold">
-          Version snapshot
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Save current edits as v{versionNo + 1}
-        </CardDescription>
+        <CardTitle className="text-sm font-semibold">Version snapshot</CardTitle>
+        <CardDescription className="text-xs">Save current edits as v{versionNo + 1}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -67,16 +51,8 @@ export function VersionPanel({
             }}
             disabled={isCreating}
           />
-          <Button
-            type="button"
-            size="sm"
-            className="w-full text-xs"
-            disabled={isCreating}
-            onClick={handleCreate}
-          >
-            {isCreating ? (
-              <Loader2 className="size-3 animate-spin mr-1" />
-            ) : null}
+          <Button type="button" size="sm" className="w-full text-xs" disabled={isCreating} onClick={handleCreate}>
+            {isCreating ? <Loader2 className="size-3 animate-spin mr-1" /> : null}
             Create version
           </Button>
         </div>
@@ -93,18 +69,12 @@ export function VersionPanel({
                   className="text-xs bg-muted/30 p-2 rounded border border-transparent hover:border-border"
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium text-foreground">
-                      Version {v.version_no}
-                    </span>
+                    <span className="font-medium text-foreground">Version {v.version_no}</span>
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(v.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {v.change_note && (
-                    <p className="text-muted-foreground truncate">
-                      {v.change_note}
-                    </p>
-                  )}
+                  {v.change_note && <p className="text-muted-foreground truncate">{v.change_note}</p>}
                 </div>
               ))}
             </div>
@@ -113,12 +83,7 @@ export function VersionPanel({
       </CardContent>
       {versions.length >= 2 && (
         <CardFooter className="pt-0">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full text-xs"
-            onClick={() => setIsCompareOpen(true)}
-          >
+          <Button variant="secondary" size="sm" className="w-full text-xs" onClick={() => setIsCompareOpen(true)}>
             Compare Versions
           </Button>
         </CardFooter>

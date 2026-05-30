@@ -1,21 +1,15 @@
 "use client";
 
 import { useState } from "react";
+
 import { useRouter } from "next/navigation";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, Check, X } from "@/lib/icons";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -24,29 +18,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Check, Edit2, Plus, Trash2, X } from "@/lib/icons";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Speaker,
-  listSpeakersAction,
-  createSpeakerAction,
-  updateSpeakerAction,
-  deleteSpeakerAction,
-} from "@/server/api-actions";
+  clientCreateSpeaker,
+  clientDeleteSpeaker,
+  clientListSpeakers,
+  clientUpdateSpeaker,
+} from "@/data/api-client";
+import type { Speaker } from "@/server/api-actions";
 
 const COLOR_OPTIONS = [
   {
@@ -57,14 +40,12 @@ const COLOR_OPTIONS = [
   {
     value: "violet",
     label: "Violet",
-    class:
-      "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+    class: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
   },
   {
     value: "emerald",
     label: "Emerald",
-    class:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    class: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
   },
   {
     value: "rose",
@@ -74,8 +55,7 @@ const COLOR_OPTIONS = [
   {
     value: "amber",
     label: "Amber",
-    class:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    class: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   },
   {
     value: "cyan",
@@ -84,13 +64,7 @@ const COLOR_OPTIONS = [
   },
 ];
 
-export function SpeakersClient({
-  meetingId,
-  initialSpeakers,
-}: {
-  meetingId: string;
-  initialSpeakers: Speaker[];
-}) {
+export function SpeakersClient({ meetingId, initialSpeakers }: { meetingId: string; initialSpeakers: Speaker[] }) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -103,13 +77,13 @@ export function SpeakersClient({
 
   const { data: speakers = initialSpeakers, isLoading } = useQuery({
     queryKey: ["speakers", meetingId],
-    queryFn: () => listSpeakersAction(meetingId),
+    queryFn: () => clientListSpeakers(meetingId),
     initialData: initialSpeakers,
   });
 
   const createMutation = useMutation({
     mutationFn: (payload: { display_name: string; color_label: string }) =>
-      createSpeakerAction(meetingId, payload),
+      clientCreateSpeaker(meetingId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["speakers", meetingId] });
       toast.success("Speaker created successfully");
@@ -121,13 +95,8 @@ export function SpeakersClient({
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: { display_name: string; color_label: string };
-    }) => updateSpeakerAction(meetingId, id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: { display_name: string; color_label: string } }) =>
+      clientUpdateSpeaker(meetingId, id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["speakers", meetingId] });
       toast.success("Speaker updated successfully");
@@ -139,7 +108,7 @@ export function SpeakersClient({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteSpeakerAction(meetingId, id),
+    mutationFn: (id: string) => clientDeleteSpeaker(meetingId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["speakers", meetingId] });
       toast.success("Speaker deleted successfully");
@@ -179,11 +148,7 @@ export function SpeakersClient({
   };
 
   const handleDelete = (id: string) => {
-    if (
-      confirm(
-        "Are you sure you want to delete this speaker? This action cannot be undone.",
-      )
-    ) {
+    if (confirm("Are you sure you want to delete this speaker? This action cannot be undone.")) {
       deleteMutation.mutate(id);
     }
   };
@@ -194,8 +159,7 @@ export function SpeakersClient({
         <div>
           <CardTitle>Meeting Speakers</CardTitle>
           <CardDescription>
-            Manage the list of speakers for this meeting. You can assign these
-            speakers to transcript segments.
+            Manage the list of speakers for this meeting. You can assign these speakers to transcript segments.
           </CardDescription>
         </div>
         <Button onClick={handleOpenCreate} size="sm">
@@ -207,12 +171,7 @@ export function SpeakersClient({
         {speakers.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
             <p className="text-sm text-muted-foreground">No speakers found.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={handleOpenCreate}
-            >
+            <Button variant="outline" size="sm" className="mt-4" onClick={handleOpenCreate}>
               <Plus className="mr-2 size-4" />
               Add Speaker
             </Button>
@@ -226,64 +185,38 @@ export function SpeakersClient({
                   <TableHead>Original Label</TableHead>
                   <TableHead>Color</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px] text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="w-[100px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {speakers.map((speaker) => {
-                  const colorConfig =
-                    COLOR_OPTIONS.find(
-                      (c) => c.value === speaker.color_label,
-                    ) || COLOR_OPTIONS[0];
+                  const colorConfig = COLOR_OPTIONS.find((c) => c.value === speaker.color_label) || COLOR_OPTIONS[0];
                   return (
                     <TableRow key={speaker.id}>
-                      <TableCell className="font-medium">
-                        {speaker.display_name || speaker.speaker_label}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {speaker.speaker_label}
-                      </TableCell>
+                      <TableCell className="font-medium">{speaker.display_name || speaker.speaker_label}</TableCell>
+                      <TableCell className="text-muted-foreground">{speaker.speaker_label}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={colorConfig.class}
-                        >
+                        <Badge variant="secondary" className={colorConfig.class}>
                           {colorConfig.label}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {speaker.is_confirmed ? (
-                          <Badge
-                            variant="outline"
-                            className="text-green-600 border-green-200 bg-green-50"
-                          >
+                          <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
                             <Check className="mr-1 size-3" /> Confirmed
                           </Badge>
                         ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-yellow-600 border-yellow-200 bg-yellow-50"
-                          >
+                          <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">
                             Unconfirmed
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(speaker)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(speaker)}>
                             <Edit2 className="size-4 text-muted-foreground" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(speaker.id)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(speaker.id)}>
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
                         </div>
@@ -301,13 +234,9 @@ export function SpeakersClient({
         <DialogContent>
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle>
-                {editingSpeaker ? "Edit Speaker" : "Add Speaker"}
-              </DialogTitle>
+              <DialogTitle>{editingSpeaker ? "Edit Speaker" : "Add Speaker"}</DialogTitle>
               <DialogDescription>
-                {editingSpeaker
-                  ? "Update the details for this speaker."
-                  : "Add a new speaker to the meeting."}
+                {editingSpeaker ? "Update the details for this speaker." : "Add a new speaker to the meeting."}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -316,9 +245,7 @@ export function SpeakersClient({
                 <Input
                   id="display_name"
                   value={formData.display_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, display_name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
                   placeholder="e.g. John Doe"
                   required
                 />
@@ -327,9 +254,7 @@ export function SpeakersClient({
                 <Label htmlFor="color_label">Color Theme</Label>
                 <Select
                   value={formData.color_label}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, color_label: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, color_label: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a color" />
@@ -338,9 +263,7 @@ export function SpeakersClient({
                     {COLOR_OPTIONS.map((color) => (
                       <SelectItem key={color.value} value={color.value}>
                         <div className="flex items-center gap-2">
-                          <div
-                            className={`h-4 w-4 rounded-full ${color.class.split(" ")[0]}`}
-                          />
+                          <div className={`h-4 w-4 rounded-full ${color.class.split(" ")[0]}`} />
                           {color.label}
                         </div>
                       </SelectItem>
@@ -358,10 +281,7 @@ export function SpeakersClient({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                 {editingSpeaker ? "Save Changes" : "Create Speaker"}
               </Button>
             </DialogFooter>

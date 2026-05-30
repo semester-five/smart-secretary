@@ -23,6 +23,17 @@ type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   headers?: Record<string, string>;
+  /**
+   * Override the fetch cache strategy. Defaults to "no-store".
+   * Use "no-store" for real-time data (meeting status, processing jobs).
+   */
+  cache?: RequestCache;
+  /**
+   * Enable Next.js Incremental Static Regeneration for this request.
+   * When set, the response is cached and revalidated after N seconds.
+   * Takes precedence over the `cache` option.
+   */
+  revalidate?: number | false;
 };
 
 function getErrorMessage(payload: unknown, fallback: string): string {
@@ -97,14 +108,22 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}, 
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const body = (isFormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined) as BodyInit | undefined;
+  const body = (isFormData ? options.body : options.body !== undefined ? JSON.stringify(options.body) : undefined) as
+    | BodyInit
+    | undefined;
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const fetchInit: RequestInit & { next?: { revalidate?: number | false } } = {
     method: options.method ?? "GET",
     headers,
     body,
-    cache: "no-store",
-  });
+    cache: options.revalidate !== undefined ? undefined : (options.cache ?? "no-store"),
+  };
+
+  if (options.revalidate !== undefined) {
+    fetchInit.next = { revalidate: options.revalidate };
+  }
+
+  const response = await fetch(`${API_URL}${path}`, fetchInit);
 
   if (response.status === 401 && retry) {
     const newAccessToken = await refreshAccessTokenIfPossible();

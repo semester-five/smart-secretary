@@ -67,9 +67,7 @@ export function ActionItemCard({ item, onClick, overlay = false }: ActionItemCar
         )}
 
         {/* AI source label */}
-        {item.source === "ai" && (
-          <span className="ml-auto text-xs text-muted-foreground/60">AI</span>
-        )}
+        {item.source === "ai" && <span className="ml-auto text-xs text-muted-foreground/60">AI</span>}
 
         {/* Assignee text */}
         {item.assignee_text && (

@@ -3,12 +3,11 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ArrowLeft } from "@/lib/icons";
-
 import { Badge } from "@/components/ui/badge";
-import { getMeetingByIdAction } from "@/server/api-actions";
+import { ArrowLeft } from "@/lib/icons";
+import { getMeetingById } from "@/server/queries/meeting-queries";
 
-import { MeetingTabs, type MeetingTab } from "../_components/meeting-tabs";
+import { type MeetingTab, MeetingTabs } from "../_components/meeting-tabs";
 
 export default async function MeetingLayout({
   children,
@@ -19,7 +18,7 @@ export default async function MeetingLayout({
 }>) {
   const { projectId, meetingId } = await params;
 
-  const meeting = await getMeetingByIdAction(meetingId).catch(() => null);
+  const meeting = await getMeetingById(meetingId).catch(() => null);
   if (!meeting) {
     notFound();
   }
@@ -72,18 +71,10 @@ export default async function MeetingLayout({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">
-            {meeting.title}
-          </h1>
-          <p className="mt-1 text-muted-foreground text-sm">
-            {new Date(meeting.meeting_date).toLocaleString()}
-          </p>
+          <h1 className="font-semibold text-2xl tracking-tight">{meeting.title}</h1>
+          <p className="mt-1 text-muted-foreground text-sm">{new Date(meeting.meeting_date).toLocaleString()}</p>
         </div>
-        <Badge
-          variant={meeting.status === "processing" ? "default" : "secondary"}
-        >
-          {meeting.status}
-        </Badge>
+        <Badge variant={meeting.status === "processing" ? "default" : "secondary"}>{meeting.status}</Badge>
       </div>
 
       <MeetingTabs tabs={tabs} />

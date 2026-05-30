@@ -1,25 +1,9 @@
 import Link from "next/link";
 
-import {
-  ArrowLeft,
-  Calendar,
-  CalendarX,
-  ClipboardPlus,
-  Search,
-} from "@/lib/icons";
-
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  getProjectByIdAction,
-  listProjectMeetingsAction,
-} from "@/server/api-actions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Calendar, CalendarX, ClipboardPlus, Search } from "@/lib/icons";
+import { getProjectById, listProjectMeetings } from "@/server/queries/project-queries";
 
 import { CreateMeetingForm } from "./_components/create-meeting-form";
 
@@ -27,25 +11,19 @@ export const metadata = {
   title: "Meetings - Smart Secretary",
 };
 
-export default async function ProjectMeetingsPage({
-  params,
-}: {
-  params: Promise<{ projectId: string }>;
-}) {
+export default async function ProjectMeetingsPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
 
   const [project, meetings] = await Promise.all([
-    getProjectByIdAction(projectId).catch(() => null),
-    listProjectMeetingsAction(projectId).catch(() => []),
+    getProjectById(projectId).catch(() => null),
+    listProjectMeetings(projectId).catch(() => []),
   ]);
 
   if (!project) {
     return (
       <div className="space-y-4">
         <h1 className="font-semibold text-2xl">Meetings</h1>
-        <p className="text-muted-foreground text-sm">
-          Project not found or no permission.
-        </p>
+        <p className="text-muted-foreground text-sm">Project not found or no permission.</p>
       </div>
     );
   }
@@ -81,10 +59,7 @@ export default async function ProjectMeetingsPage({
             <ClipboardPlus className="size-5" />
             Create meeting draft
           </CardTitle>
-          <CardDescription>
-            Create a meeting record before uploading audio and starting
-            processing.
-          </CardDescription>
+          <CardDescription>Create a meeting record before uploading audio and starting processing.</CardDescription>
         </CardHeader>
         <CardContent>
           <CreateMeetingForm projectId={project.id} />
@@ -97,9 +72,7 @@ export default async function ProjectMeetingsPage({
             <Calendar className="size-5" />
             Meeting timeline
           </CardTitle>
-          <CardDescription>
-            View upcoming and past meetings scheduled for this project.
-          </CardDescription>
+          <CardDescription>View upcoming and past meetings scheduled for this project.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {meetings.length > 0 ? (
@@ -117,13 +90,7 @@ export default async function ProjectMeetingsPage({
                       {new Date(meeting.meeting_date).toLocaleString()}
                     </p>
                   </div>
-                  <Badge
-                    variant={
-                      meeting.status === "processing" ? "default" : "secondary"
-                    }
-                  >
-                    {meeting.status}
-                  </Badge>
+                  <Badge variant={meeting.status === "processing" ? "default" : "secondary"}>{meeting.status}</Badge>
                 </div>
               </Link>
             ))
@@ -134,8 +101,8 @@ export default async function ProjectMeetingsPage({
               </div>
               <p className="font-semibold text-base">No meetings scheduled</p>
               <p className="mt-1 max-w-sm text-muted-foreground text-sm">
-                Get started by creating a new meeting draft above. Once created,
-                you can upload meeting audio for processing.
+                Get started by creating a new meeting draft above. Once created, you can upload meeting audio for
+                processing.
               </p>
             </div>
           )}

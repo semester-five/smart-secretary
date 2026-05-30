@@ -1,17 +1,10 @@
 import Link from "next/link";
 
-import { ArrowLeft, Search } from "@/lib/icons";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ArrowLeft, Search } from "@/lib/icons";
 import { searchMeetingsAction } from "@/server/api-actions";
 
 export default async function MeetingSearchPage({
@@ -76,12 +69,8 @@ export default async function MeetingSearchPage({
       </div>
 
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">
-          Search meetings
-        </h1>
-        <p className="mt-1 text-muted-foreground text-sm">
-          Filter meetings by date, status and keyword.
-        </p>
+        <h1 className="font-semibold text-2xl tracking-tight">Search meetings</h1>
+        <p className="mt-1 text-muted-foreground text-sm">Filter meetings by date, status and keyword.</p>
       </div>
 
       <Card>
@@ -90,27 +79,13 @@ export default async function MeetingSearchPage({
             <Search className="size-5" />
             Filters
           </CardTitle>
-          <CardDescription>
-            Searches metadata and indexed meeting content.
-          </CardDescription>
+          <CardDescription>Searches metadata and indexed meeting content.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-3 md:grid-cols-6">
-            <Input
-              name="keyword"
-              defaultValue={query.keyword}
-              placeholder="Keyword"
-            />
-            <Input
-              name="fromDate"
-              type="datetime-local"
-              defaultValue={query.fromDate}
-            />
-            <Input
-              name="toDate"
-              type="datetime-local"
-              defaultValue={query.toDate}
-            />
+            <Input name="keyword" defaultValue={query.keyword} placeholder="Keyword" />
+            <Input name="fromDate" type="datetime-local" defaultValue={query.fromDate} />
+            <Input name="toDate" type="datetime-local" defaultValue={query.toDate} />
             <select
               name="status"
               defaultValue={query.status ?? ""}
@@ -125,11 +100,7 @@ export default async function MeetingSearchPage({
               <option value="failed">failed</option>
             </select>
             <div className="flex gap-2">
-              <Input
-                name="pageSize"
-                defaultValue={query.pageSize ?? "20"}
-                placeholder="Page size"
-              />
+              <Input name="pageSize" defaultValue={query.pageSize ?? "20"} placeholder="Page size" />
               <Button type="submit">Apply</Button>
             </div>
             <Link
@@ -166,9 +137,7 @@ export default async function MeetingSearchPage({
                   <p className="font-medium text-sm">{meeting.title}</p>
                   <Badge variant="secondary">{meeting.status}</Badge>
                 </div>
-                <p className="mt-1 text-muted-foreground text-xs">
-                  {new Date(meeting.meeting_date).toLocaleString()}
-                </p>
+                <p className="mt-1 text-muted-foreground text-xs">{new Date(meeting.meeting_date).toLocaleString()}</p>
               </Link>
             ))
           )}

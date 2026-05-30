@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getMeetingByIdAction, listActionItemsAction } from "@/server/api-actions";
+import { getMeetingById, listActionItems } from "@/server/queries/meeting-queries";
 
 import { ActionItemsClient } from "./action-items-client";
 
@@ -12,8 +12,8 @@ export default async function ActionItemsPage({
   const { meetingId } = await params;
 
   const [meeting, actionItems] = await Promise.all([
-    getMeetingByIdAction(meetingId).catch(() => null),
-    listActionItemsAction(meetingId).catch(() => []),
+    getMeetingById(meetingId).catch(() => null),
+    listActionItems(meetingId).catch(() => []),
   ]);
 
   if (!meeting) {

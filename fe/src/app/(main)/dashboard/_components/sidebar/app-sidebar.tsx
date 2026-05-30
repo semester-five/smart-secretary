@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 
-import { Command } from "@/lib/icons";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
 import { useNavigationItems } from "@/hooks/use-navigation-items";
+import { Command } from "@/lib/icons";
 import type { CurrentUser } from "@/server/api-actions";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -51,9 +51,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/dashboard">
                 <Command />
-                <span className="font-semibold text-base">
-                  {APP_CONFIG.name}
-                </span>
+                <span className="font-semibold text-base">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

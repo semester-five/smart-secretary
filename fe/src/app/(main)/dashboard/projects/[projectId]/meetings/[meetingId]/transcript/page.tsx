@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getMeetingByIdAction, getTranscriptAction } from "@/server/api-actions";
+import { getMeetingById, getTranscript } from "@/server/queries/meeting-queries";
 
 import { TranscriptClient } from "./transcript-client";
 
@@ -12,8 +12,8 @@ export default async function TranscriptPage({
   const { meetingId } = await params;
 
   const [meeting, transcript] = await Promise.all([
-    getMeetingByIdAction(meetingId).catch(() => null),
-    getTranscriptAction(meetingId).catch(() => null),
+    getMeetingById(meetingId).catch(() => null),
+    getTranscript(meetingId).catch(() => null),
   ]);
 
   if (!meeting) {

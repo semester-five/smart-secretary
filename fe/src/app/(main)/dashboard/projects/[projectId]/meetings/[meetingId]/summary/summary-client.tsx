@@ -4,19 +4,13 @@ import { useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Loader2, WandSparkles } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2, WandSparkles } from "@/lib/icons";
 import {
   createMeetingVersionAction,
   generateSummaryAction,
@@ -34,12 +28,8 @@ export function SummaryClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [activeAction, setActiveAction] = useState<
-    "generate" | "save" | "snapshot" | null
-  >(null);
-  const [summaryText, setSummaryText] = useState(
-    initialSummary?.summary_text ?? "",
-  );
+  const [activeAction, setActiveAction] = useState<"generate" | "save" | "snapshot" | null>(null);
+  const [summaryText, setSummaryText] = useState(initialSummary?.summary_text ?? "");
   const [changeNote, setChangeNote] = useState("");
 
   const generateSummary = () => {
@@ -66,11 +56,7 @@ export function SummaryClient({
           }
         }, 2500);
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to queue summary generation.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to queue summary generation.");
       } finally {
         setActiveAction(null);
       }
@@ -95,9 +81,7 @@ export function SummaryClient({
         toast.success("Summary updated.");
         router.refresh();
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to update summary.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to update summary.");
       } finally {
         setActiveAction(null);
       }
@@ -115,9 +99,7 @@ export function SummaryClient({
         setChangeNote("");
         router.refresh();
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to create version.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to create version.");
       } finally {
         setActiveAction(null);
       }
@@ -129,16 +111,10 @@ export function SummaryClient({
       <Card>
         <CardHeader>
           <CardTitle>Summary editor</CardTitle>
-          <CardDescription>
-            Generate with AI or manually refine the summary content.
-          </CardDescription>
+          <CardDescription>Generate with AI or manually refine the summary content.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea
-            value={summaryText}
-            onChange={(event) => setSummaryText(event.target.value)}
-            rows={10}
-          />
+          <Textarea value={summaryText} onChange={(event) => setSummaryText(event.target.value)} rows={10} />
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -153,14 +129,8 @@ export function SummaryClient({
               )}
               Generate summary
             </Button>
-            <Button
-              type="button"
-              disabled={isPending && activeAction === "save"}
-              onClick={saveSummary}
-            >
-              {isPending && activeAction === "save" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : null}
+            <Button type="button" disabled={isPending && activeAction === "save"} onClick={saveSummary}>
+              {isPending && activeAction === "save" ? <Loader2 className="size-4 animate-spin" /> : null}
               Save summary
             </Button>
           </div>
@@ -170,9 +140,7 @@ export function SummaryClient({
       <Card>
         <CardHeader>
           <CardTitle>Version snapshot</CardTitle>
-          <CardDescription>
-            Create a snapshot after manual summary updates.
-          </CardDescription>
+          <CardDescription>Create a snapshot after manual summary updates.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Input
@@ -180,14 +148,8 @@ export function SummaryClient({
             onChange={(event) => setChangeNote(event.target.value)}
             placeholder="Change note (optional)"
           />
-          <Button
-            type="button"
-            disabled={isPending && activeAction === "snapshot"}
-            onClick={createSnapshot}
-          >
-            {isPending && activeAction === "snapshot" ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : null}
+          <Button type="button" disabled={isPending && activeAction === "snapshot"} onClick={createSnapshot}>
+            {isPending && activeAction === "snapshot" ? <Loader2 className="size-4 animate-spin" /> : null}
             Create version
           </Button>
         </CardContent>

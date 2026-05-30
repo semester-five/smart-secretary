@@ -4,11 +4,11 @@ import { useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Loader2, Plus } from "@/lib/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader2, Plus } from "@/lib/icons";
 import { createMeetingAction } from "@/server/api-actions";
 
 export function CreateMeetingForm({ projectId }: { projectId: string }) {
@@ -40,9 +40,7 @@ export function CreateMeetingForm({ projectId }: { projectId: string }) {
         router.push(`/dashboard/projects/${projectId}/meetings/${meeting.id}`);
         router.refresh();
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to create meeting.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to create meeting.");
       }
     });
   };
@@ -50,10 +48,7 @@ export function CreateMeetingForm({ projectId }: { projectId: string }) {
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_220px_auto] md:items-end animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="space-y-1.5">
-        <label
-          htmlFor="meeting-title"
-          className="font-medium text-sm text-foreground"
-        >
+        <label htmlFor="meeting-title" className="font-medium text-sm text-foreground">
           Title
         </label>
         <Input
@@ -65,10 +60,7 @@ export function CreateMeetingForm({ projectId }: { projectId: string }) {
         />
       </div>
       <div className="space-y-1.5">
-        <label
-          htmlFor="meeting-date"
-          className="font-medium text-sm text-foreground"
-        >
+        <label htmlFor="meeting-date" className="font-medium text-sm text-foreground">
           Meeting date
         </label>
         <Input

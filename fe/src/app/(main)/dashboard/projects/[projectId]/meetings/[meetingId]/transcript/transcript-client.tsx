@@ -8,9 +8,9 @@ import { toast } from "sonner";
 
 import {
   createMeetingVersionAction,
-  updateSpeakerAction,
   type Transcript,
   type TranscriptSegment,
+  updateSpeakerAction,
   updateTranscriptSegmentAction,
 } from "@/server/api-actions";
 
@@ -28,11 +28,9 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
 
   // Editable segment drafts {text, speakerId}
-  const [segmentDrafts, setSegmentDrafts] = useState<Record<string, { text: string; speakerId: string }>>(
-    () => Object.fromEntries(transcript.segments.map((s) => [s.id, { text: s.text, speakerId: s.speaker_id }])),
+  const [segmentDrafts, setSegmentDrafts] = useState<Record<string, { text: string; speakerId: string }>>(() =>
+    Object.fromEntries(transcript.segments.map((s) => [s.id, { text: s.text, speakerId: s.speaker_id }])),
   );
-
-
 
   // Lookup speaker by ID
   const speakerById = useMemo(
@@ -65,7 +63,7 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
   const saveSegment = (segmentId: string) => {
     const draft = segmentDrafts[segmentId];
     if (!draft) return;
-    
+
     const text = draft.text.trim();
     if (!text) {
       toast.error("Transcript text cannot be empty.");
@@ -85,8 +83,6 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
       }
     });
   };
-
-
 
   const snapshotVersion = (changeNote: string) => {
     startTransition(async () => {
@@ -123,9 +119,7 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
         {transcript.segments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed">
             <p className="font-medium text-muted-foreground">No transcript segments</p>
-            <p className="mt-1 text-sm text-muted-foreground/60">
-              Process the meeting audio to generate a transcript.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground/60">Process the meeting audio to generate a transcript.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -159,7 +153,10 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
                       if (editingSegmentId && editingSegmentId !== segment.id) {
                         const original = transcript.segments.find((s) => s.id === editingSegmentId);
                         if (original) {
-                          setSegmentDrafts((prev) => ({ ...prev, [editingSegmentId]: { text: original.text, speakerId: original.speaker_id } }));
+                          setSegmentDrafts((prev) => ({
+                            ...prev,
+                            [editingSegmentId]: { text: original.text, speakerId: original.speaker_id },
+                          }));
                         }
                       }
                       setEditingSegmentId(segment.id);
@@ -172,7 +169,10 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
                     }
                     onSave={() => saveSegment(segment.id)}
                     onCancel={() => {
-                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: { text: segment.text, speakerId: segment.speaker_id } }));
+                      setSegmentDrafts((prev) => ({
+                        ...prev,
+                        [segment.id]: { text: segment.text, speakerId: segment.speaker_id },
+                      }));
                       setEditingSegmentId(null);
                     }}
                   />
@@ -193,8 +193,6 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
           <span className="text-border">·</span>
           <span>v{transcript.version_no}</span>
         </div>
-
-
 
         <VersionPanel
           meetingId={meetingId}
