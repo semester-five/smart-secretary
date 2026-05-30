@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { apiRequest } from "@/server/api-client";
 
 export type CurrentUser = {
@@ -328,10 +330,13 @@ export async function listProjectsAction(): Promise<Project[]> {
 }
 
 export async function createProjectAction(payload: ProjectCreatePayload): Promise<Project> {
-  return apiRequest<Project>("/api/v1/projects", {
+  const project = await apiRequest<Project>("/api/v1/projects", {
     method: "POST",
     body: payload,
   });
+  revalidatePath("/dashboard/projects");
+  revalidatePath(`/dashboard/projects/${project.id}`);
+  return project;
 }
 
 export async function getProjectByIdAction(projectId: string): Promise<Project> {
@@ -339,10 +344,13 @@ export async function getProjectByIdAction(projectId: string): Promise<Project> 
 }
 
 export async function updateProjectAction(projectId: string, payload: ProjectUpdatePayload): Promise<Project> {
-  return apiRequest<Project>(`/api/v1/projects/${projectId}`, {
+  const project = await apiRequest<Project>(`/api/v1/projects/${projectId}`, {
     method: "PATCH",
     body: payload,
   });
+  revalidatePath("/dashboard/projects");
+  revalidatePath(`/dashboard/projects/${project.id}`);
+  return project;
 }
 
 export async function listProjectMeetingsAction(projectId: string, sort = "meeting_date.desc"): Promise<Meeting[]> {
@@ -350,10 +358,14 @@ export async function listProjectMeetingsAction(projectId: string, sort = "meeti
 }
 
 export async function createMeetingAction(payload: MeetingCreatePayload): Promise<Meeting> {
-  return apiRequest<Meeting>("/api/v1/meetings", {
+  const meeting = await apiRequest<Meeting>("/api/v1/meetings", {
     method: "POST",
     body: payload,
   });
+  revalidatePath(`/dashboard/projects/${meeting.project_id}`);
+  revalidatePath(`/dashboard/projects/${meeting.project_id}/meetings`);
+  revalidatePath(`/dashboard/projects/${meeting.project_id}/meetings/${meeting.id}`);
+  return meeting;
 }
 
 export async function getMeetingByIdAction(meetingId: string): Promise<MeetingDetail> {

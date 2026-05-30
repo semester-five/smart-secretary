@@ -53,7 +53,7 @@ export async function clientProcessMeeting(meetingId: string): Promise<MeetingSt
 export async function clientUploadMeetingFile(meetingId: string, file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch(`${API_BASE}/meetings/${meetingId}/files`, {
+  const res = await fetch(`${API_BASE}/meetings/${meetingId}/files:upload`, {
     method: "POST",
     body: formData,
   });
