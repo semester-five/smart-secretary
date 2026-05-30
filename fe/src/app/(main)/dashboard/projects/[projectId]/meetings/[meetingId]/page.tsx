@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Captions, CheckSquare, FileText } from "@/lib/icons";
+import { Captions, CheckSquare, Download, FileText } from "@/lib/icons";
 import { getMeetingById, getMeetingStatus } from "@/server/queries/meeting-queries";
 
 export async function generateMetadata({ params }: { params: Promise<{ projectId: string; meetingId: string }> }) {
@@ -98,6 +99,27 @@ export default async function MeetingOverviewPage({
             </p>
             <p className="mt-2 text-muted-foreground text-xs">Track meeting tasks and assignees.</p>
           </Link>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle>Export official minutes</CardTitle>
+          <CardDescription>Download a meeting record with summary, key points, decisions, tasks, and transcript.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row">
+          <Button asChild className="w-full gap-2 sm:w-auto">
+            <a href={`/api/client/meetings/${meetingId}/export?format=pdf`}>
+              <Download className="size-4" />
+              PDF
+            </a>
+          </Button>
+          <Button asChild variant="outline" className="w-full gap-2 sm:w-auto">
+            <a href={`/api/client/meetings/${meetingId}/export?format=docx`}>
+              <Download className="size-4" />
+              DOCX
+            </a>
+          </Button>
         </CardContent>
       </Card>
     </div>

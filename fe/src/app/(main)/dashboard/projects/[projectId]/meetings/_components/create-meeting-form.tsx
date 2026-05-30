@@ -9,9 +9,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Plus } from "@/lib/icons";
-import { createMeetingAction } from "@/server/api-actions";
+import { createMeetingAction, type Meeting } from "@/server/api-actions";
 
-export function CreateMeetingForm({ projectId }: { projectId: string }) {
+type CreateMeetingFormProps = {
+  projectId: string;
+  onCreated?: (meeting: Meeting) => void;
+};
+
+export function CreateMeetingForm({ projectId, onCreated }: CreateMeetingFormProps) {
   const [title, setTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -37,8 +42,11 @@ export function CreateMeetingForm({ projectId }: { projectId: string }) {
         toast.success("Meeting created.");
         setTitle("");
         setMeetingDate("");
+        if (onCreated) {
+          onCreated(meeting);
+          return;
+        }
         router.push(`/dashboard/projects/${projectId}/meetings/${meeting.id}`);
-        router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to create meeting.");
       }

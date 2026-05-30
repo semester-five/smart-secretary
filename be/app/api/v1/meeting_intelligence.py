@@ -4,6 +4,7 @@ from math import ceil
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,6 +41,7 @@ from app.schemas.meeting_intelligence import (
 )
 from app.schemas.project import MeetingRead
 from app.services.summarization_processor import process_meeting_summary_task
+from app.services.meeting_exporter import ExportContent, build_docx, build_pdf, make_export_filename
 
 router = APIRouter(prefix="/meetings", tags=["meeting-intelligence"])
 DBSession = Annotated[AsyncSession, Depends(get_db)]
@@ -172,6 +174,74 @@ async def _ensure_meeting_version_exists(
     return meeting_version
 
 
+async def _build_export_content(
+    db: AsyncSession,
+    meeting: Meeting,
+    project: Project,
+    current_user: User,
+    version: str,
+) -> ExportContent:
+    resolved_version = await _resolve_version_no(db, meeting.id, version)
+    meeting_version = await db.scalar(
+        select(MeetingVersion).where(
+            MeetingVersion.meeting_id == meeting.id,
+            MeetingVersion.version_no == resolved_version,
+            MeetingVersion.deleted_at.is_(None),
+        )
+    )
+    summary = await db.scalar(
+        select(MeetingSummary).where(
+            MeetingSummary.meeting_id == meeting.id,
+            MeetingSummary.version_no == resolved_version,
+            MeetingSummary.deleted_at.is_(None),
+        )
+    )
+    speakers = (
+        await db.scalars(
+            select(Speaker)
+            .where(Speaker.meeting_id == meeting.id, Speaker.deleted_at.is_(None))
+            .order_by(Speaker.speaker_label.asc())
+        )
+    ).all()
+    transcript_segments = (
+        await db.scalars(
+            select(TranscriptSegment)
+            .where(
+                TranscriptSegment.meeting_id == meeting.id,
+                TranscriptSegment.version_no == resolved_version,
+                TranscriptSegment.deleted_at.is_(None),
+            )
+            .order_by(TranscriptSegment.start_ms.asc())
+        )
+    ).all()
+    action_items = (
+        await db.scalars(
+            select(ActionItem)
+            .where(
+                ActionItem.meeting_id == meeting.id,
+                ActionItem.version_no == resolved_version,
+                ActionItem.deleted_at.is_(None),
+            )
+            .order_by(ActionItem.created_at.asc())
+        )
+    ).all()
+    creator = None
+    if meeting.created_by:
+        creator = await db.scalar(select(User).where(User.id == meeting.created_by, User.deleted_at.is_(None)))
+
+    return ExportContent(
+        project=project,
+        meeting=meeting,
+        version=meeting_version,
+        summary=summary,
+        speakers=list(speakers),
+        action_items=list(action_items),
+        transcript_segments=list(transcript_segments),
+        creator=creator,
+        exported_by=current_user,
+    )
+
+
 @router.get("/search", response_model=MeetingSearchResponse)
 async def search_meetings(
     current_user: CurrentUser,
@@ -284,6 +354,31 @@ async def get_meeting_versions(
         )
     ).all()
     return [MeetingVersionRead.model_validate(v) for v in versions]
+
+
+@router.get("/{meeting_id}/export")
+async def export_meeting_minutes(
+    meeting_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+    format: str = Query(default="pdf", pattern="^(pdf|docx)$"),
+    version: str = "latest",
+) -> StreamingResponse:
+    meeting = await _get_meeting_or_404(db, meeting_id)
+    project = await _get_project_or_404(db, meeting.project_id)
+    await _ensure_project_access(db, project, current_user)
+
+    content = await _build_export_content(db, meeting, project, current_user, version)
+    if format == "docx":
+        file_bytes = build_docx(content)
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    else:
+        file_bytes = build_pdf(content)
+        media_type = "application/pdf"
+
+    filename = make_export_filename(meeting, format)
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(iter([file_bytes]), media_type=media_type, headers=headers)
 
 
 @router.get("/{meeting_id}/transcript", response_model=TranscriptRead)

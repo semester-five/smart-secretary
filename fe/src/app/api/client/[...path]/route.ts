@@ -72,13 +72,21 @@ async function handler(
       cache: "no-store",
     });
 
-    const responseBody = await response.text();
+    const responseBody = await response.arrayBuffer();
 
-    return new NextResponse(responseBody || null, {
+    const responseHeaders = new Headers();
+    const contentType = response.headers.get("Content-Type");
+    const contentDisposition = response.headers.get("Content-Disposition");
+    if (contentType) {
+      responseHeaders.set("Content-Type", contentType);
+    }
+    if (contentDisposition) {
+      responseHeaders.set("Content-Disposition", contentDisposition);
+    }
+
+    return new NextResponse(responseBody.byteLength > 0 ? responseBody : null, {
       status: response.status,
-      headers: {
-        "Content-Type": response.headers.get("Content-Type") ?? "application/json",
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.error("[api/client proxy] Failed to reach backend:", error);
