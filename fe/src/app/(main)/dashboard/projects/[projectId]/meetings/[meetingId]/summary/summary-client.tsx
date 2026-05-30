@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Globe, Loader2, WandSparkles } from "@/lib/icons";
-import { Loader2, WandSparkles } from "@/lib/icons";
 import {
   createMeetingVersionAction,
   generateSummaryAction,
@@ -132,12 +131,25 @@ export function SummaryClient({
           <CardDescription>Generate with AI or manually refine the summary content.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea
-            value={summaryText}
-            onChange={(event) => setSummaryText(event.target.value)}
-            rows={10}
-          />
-          <div className="flex flex-wrap gap-2">
+          <Textarea value={summaryText} onChange={(event) => setSummaryText(event.target.value)} rows={10} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={summaryLanguage}
+              onValueChange={(value) => setSummaryLanguage(value as SummaryLanguage)}
+              disabled={isPending && activeAction === "generate"}
+            >
+              <SelectTrigger className="w-[180px]">
+                <Globe className="size-4 text-muted-foreground" />
+                <SelectValue aria-label="Summary language" />
+              </SelectTrigger>
+              <SelectContent>
+                {summaryLanguageOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               type="button"
               variant="outline"
