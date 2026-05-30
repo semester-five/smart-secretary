@@ -19,6 +19,10 @@ from app.models.project import (
 )
 
 
+MAX_SUMMARY_OUTPUT_TOKENS = 8192
+SummaryLanguage = Literal["auto", "en", "vi"]
+
+
 class GeneratedActionItem(BaseModel):
     title: str = Field(min_length=1)
     assignee: str | None = None
@@ -121,24 +125,75 @@ async def _build_transcript_text(
     return "\n".join(lines)
 
 
-def _build_prompt(transcript: str) -> str:
+def _count_words(text: str) -> int:
+    return len(text.split())
+
+
+def _summary_length_guidance(word_count: int) -> str:
+    if word_count < 600:
+        return (
+            "Write 1-2 focused paragraphs, about 80-160 words total. "
+            "Keep it compact because the transcript is short."
+        )
+    if word_count < 1800:
+        return (
+            "Write 2-4 paragraphs, about 180-350 words total. "
+            "Cover the main discussion flow, important context, and outcomes."
+        )
+    if word_count < 4500:
+        return (
+            "Write 4-6 substantial paragraphs, about 350-700 words total. "
+            "Preserve the major topics, trade-offs, decisions, and follow-up context."
+        )
+    return (
+        "Write 6-10 substantial paragraphs, about 700-1200 words total. "
+        "For long meetings, include enough detail for someone who did not attend to understand "
+        "the discussion flow, key context, decisions, risks, and next steps."
+    )
+
+
+def _key_point_guidance(word_count: int) -> str:
+    if word_count < 600:
+        return "3-5 important points"
+    if word_count < 1800:
+        return "4-8 important points"
+    if word_count < 4500:
+        return "6-12 important points"
+    return "8-16 important points"
+
+
+def _resolve_summary_language(output_language: SummaryLanguage | None) -> SummaryLanguage:
+    requested_language = output_language or settings.SUMMARY_LANGUAGE
+    if requested_language in {"auto", "en", "vi"}:
+        return requested_language
+    return "auto"
+
+
+def _build_prompt(transcript: str, output_language: SummaryLanguage | None = None) -> str:
+    requested_language = _resolve_summary_language(output_language)
     language_instruction = {
         "auto": "Use the same primary language as the transcript.",
         "en": "Write the output in English.",
         "vi": "Write the output in Vietnamese.",
-    }.get(settings.SUMMARY_LANGUAGE, "Use the same primary language as the transcript.")
+    }.get(requested_language, "Use the same primary language as the transcript.")
+    transcript_word_count = _count_words(transcript)
+    summary_length_guidance = _summary_length_guidance(transcript_word_count)
+    key_point_guidance = _key_point_guidance(transcript_word_count)
 
     return f"""
 You are a meeting intelligence assistant.
 
 {language_instruction}
 
-Summarize the meeting transcript faithfully.
+Summarize the meeting transcript faithfully. The summary length must scale with the amount
+of transcript content instead of always being a short abstract.
 
 Rules:
 - Do not invent facts, attendees, decisions, owners, or due dates.
-- summary_text: one concise paragraph.
-- key_points: 3-7 important points.
+- Transcript length: approximately {transcript_word_count} words.
+- summary_text: {summary_length_guidance}
+- summary_text: use multiple paragraphs separated by blank lines when the transcript is medium or long.
+- key_points: {key_point_guidance}.
 - decisions: only explicit decisions. Use an empty list if none.
 - action_items: only explicit or strongly implied tasks. Include transcript evidence.
 - open_questions: unresolved questions or follow-ups. Use an empty list if none.
@@ -172,6 +227,7 @@ def _call_gemini(prompt: str) -> GeneratedMeetingSummary:
         ],
         "generationConfig": {
             "temperature": 0.2,
+            "maxOutputTokens": MAX_SUMMARY_OUTPUT_TOKENS,
             "responseMimeType": "application/json",
             "responseJsonSchema": _response_schema(),
         },
@@ -205,6 +261,7 @@ async def _save_summary(
     version_no: int,
     current_user_id: str,
     generated: GeneratedMeetingSummary,
+    requested_language: SummaryLanguage,
 ) -> None:
     now = datetime.now(UTC)
     summary = await db.scalar(
@@ -218,6 +275,7 @@ async def _save_summary(
         "items": generated.key_points,
         "open_questions": generated.open_questions,
         "language": generated.language,
+        "requested_language": requested_language,
     }
     decisions_json = {"items": generated.decisions}
 
@@ -284,6 +342,7 @@ async def process_meeting_summary_task(
     current_user_id: str,
     db: AsyncSession,
     version_no: int = 1,
+    output_language: SummaryLanguage | None = None,
 ) -> None:
     try:
         job = await db.scalar(select(ProcessingJob).where(ProcessingJob.id == job_id))
@@ -294,10 +353,11 @@ async def process_meeting_summary_task(
             await db.commit()
 
         transcript = await _build_transcript_text(db, meeting_id, version_no)
-        prompt = _build_prompt(transcript)
+        requested_language = _resolve_summary_language(output_language)
+        prompt = _build_prompt(transcript, output_language)
         generated = await asyncio.to_thread(_call_gemini, prompt)
 
-        await _save_summary(db, meeting_id, version_no, current_user_id, generated)
+        await _save_summary(db, meeting_id, version_no, current_user_id, generated, requested_language)
 
         meeting = await db.scalar(select(Meeting).where(Meeting.id == meeting_id))
         if meeting:

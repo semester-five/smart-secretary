@@ -95,6 +95,10 @@ class MeetingSummaryUpdate(BaseModel):
     decisions_json: dict[str, Any] | None = None
 
 
+class MeetingSummaryGenerateRequest(BaseModel):
+    language: Literal["auto", "en", "vi"] = "auto"
+
+
 class ActionItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

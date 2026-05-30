@@ -28,6 +28,7 @@ from app.schemas.meeting_intelligence import (
     ActionItemRead,
     ActionItemUpdate,
     MeetingSearchResponse,
+    MeetingSummaryGenerateRequest,
     MeetingSummaryRead,
     MeetingSummaryUpdate,
     MeetingVersionCreate,
@@ -696,6 +697,7 @@ async def generate_summary(
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
     db: DBSession,
+    payload: MeetingSummaryGenerateRequest | None = None,
 ) -> ProcessingJobRead:
     meeting = await _get_meeting_or_404(db, meeting_id)
     project = await _get_project_or_404(db, meeting.project_id)
@@ -734,6 +736,7 @@ async def generate_summary(
     await db.refresh(job)
     job_id = str(job.id)
     user_id = str(current_user.id)
+    output_language = payload.language if payload else None
 
     async def task_wrapper() -> None:
         async with AsyncSessionLocal() as session:
@@ -743,6 +746,7 @@ async def generate_summary(
                 user_id,
                 session,
                 version_no,
+                output_language,
             )
 
     background_tasks.add_task(task_wrapper)
