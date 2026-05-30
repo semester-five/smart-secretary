@@ -9,15 +9,32 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Globe, Loader2, WandSparkles } from "@/lib/icons";
 import { Loader2, WandSparkles } from "@/lib/icons";
 import {
   createMeetingVersionAction,
   generateSummaryAction,
   getMeetingStatusAction,
   type MeetingSummary,
+  type SummaryLanguage,
   updateMeetingSummaryAction,
 } from "@/server/api-actions";
+
+const summaryLanguageOptions: Array<{
+  value: SummaryLanguage;
+  label: string;
+}> = [
+  { value: "auto", label: "Auto" },
+  { value: "vi", label: "Vietnamese" },
+  { value: "en", label: "English" },
+];
+
+function getInitialSummaryLanguage(summary: MeetingSummary | null): SummaryLanguage {
+  const requestedLanguage = summary?.key_points_json?.requested_language;
+  return requestedLanguage === "vi" || requestedLanguage === "en" ? requestedLanguage : "auto";
+}
 
 export function SummaryClient({
   meetingId,
@@ -30,13 +47,14 @@ export function SummaryClient({
   const [isPending, startTransition] = useTransition();
   const [activeAction, setActiveAction] = useState<"generate" | "save" | "snapshot" | null>(null);
   const [summaryText, setSummaryText] = useState(initialSummary?.summary_text ?? "");
+  const [summaryLanguage, setSummaryLanguage] = useState<SummaryLanguage>(getInitialSummaryLanguage(initialSummary));
   const [changeNote, setChangeNote] = useState("");
 
   const generateSummary = () => {
     startTransition(async () => {
       try {
         setActiveAction("generate");
-        await generateSummaryAction(meetingId);
+        await generateSummaryAction(meetingId, { language: summaryLanguage });
         toast.success("Summary generation has been queued.");
         const poll = window.setInterval(async () => {
           try {
@@ -114,7 +132,11 @@ export function SummaryClient({
           <CardDescription>Generate with AI or manually refine the summary content.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea value={summaryText} onChange={(event) => setSummaryText(event.target.value)} rows={10} />
+          <Textarea
+            value={summaryText}
+            onChange={(event) => setSummaryText(event.target.value)}
+            rows={10}
+          />
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"

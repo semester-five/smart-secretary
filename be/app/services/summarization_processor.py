@@ -20,6 +20,7 @@ from app.models.project import (
 
 
 MAX_SUMMARY_OUTPUT_TOKENS = 8192
+SummaryLanguage = Literal["auto", "en", "vi"]
 
 
 class GeneratedActionItem(BaseModel):
@@ -161,12 +162,20 @@ def _key_point_guidance(word_count: int) -> str:
     return "8-16 important points"
 
 
-def _build_prompt(transcript: str) -> str:
+def _resolve_summary_language(output_language: SummaryLanguage | None) -> SummaryLanguage:
+    requested_language = output_language or settings.SUMMARY_LANGUAGE
+    if requested_language in {"auto", "en", "vi"}:
+        return requested_language
+    return "auto"
+
+
+def _build_prompt(transcript: str, output_language: SummaryLanguage | None = None) -> str:
+    requested_language = _resolve_summary_language(output_language)
     language_instruction = {
         "auto": "Use the same primary language as the transcript.",
         "en": "Write the output in English.",
         "vi": "Write the output in Vietnamese.",
-    }.get(settings.SUMMARY_LANGUAGE, "Use the same primary language as the transcript.")
+    }.get(requested_language, "Use the same primary language as the transcript.")
     transcript_word_count = _count_words(transcript)
     summary_length_guidance = _summary_length_guidance(transcript_word_count)
     key_point_guidance = _key_point_guidance(transcript_word_count)
@@ -252,6 +261,7 @@ async def _save_summary(
     version_no: int,
     current_user_id: str,
     generated: GeneratedMeetingSummary,
+    requested_language: SummaryLanguage,
 ) -> None:
     now = datetime.now(UTC)
     summary = await db.scalar(
@@ -265,6 +275,7 @@ async def _save_summary(
         "items": generated.key_points,
         "open_questions": generated.open_questions,
         "language": generated.language,
+        "requested_language": requested_language,
     }
     decisions_json = {"items": generated.decisions}
 
@@ -331,6 +342,7 @@ async def process_meeting_summary_task(
     current_user_id: str,
     db: AsyncSession,
     version_no: int = 1,
+    output_language: SummaryLanguage | None = None,
 ) -> None:
     try:
         job = await db.scalar(select(ProcessingJob).where(ProcessingJob.id == job_id))
@@ -341,10 +353,11 @@ async def process_meeting_summary_task(
             await db.commit()
 
         transcript = await _build_transcript_text(db, meeting_id, version_no)
-        prompt = _build_prompt(transcript)
+        requested_language = _resolve_summary_language(output_language)
+        prompt = _build_prompt(transcript, output_language)
         generated = await asyncio.to_thread(_call_gemini, prompt)
 
-        await _save_summary(db, meeting_id, version_no, current_user_id, generated)
+        await _save_summary(db, meeting_id, version_no, current_user_id, generated, requested_language)
 
         meeting = await db.scalar(select(Meeting).where(Meeting.id == meeting_id))
         if meeting:

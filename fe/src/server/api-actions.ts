@@ -240,6 +240,8 @@ export type MeetingSummary = {
   updated_at: string;
 };
 
+export type SummaryLanguage = "auto" | "en" | "vi";
+
 export type ActionItem = {
   id: string;
   meeting_id: string;
@@ -455,9 +457,13 @@ export async function createMeetingVersionAction(
   });
 }
 
-export async function generateSummaryAction(meetingId: string): Promise<ProcessingJob> {
+export async function generateSummaryAction(
+  meetingId: string,
+  payload: { language?: SummaryLanguage } = {},
+): Promise<ProcessingJob> {
   return apiRequest<ProcessingJob>(`/api/v1/meetings/${meetingId}/summary:generate`, {
     method: "POST",
+    body: payload,
   });
 }
 
