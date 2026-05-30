@@ -80,4 +80,5 @@ export {
     WandSparkles,
     Edit2,
     ArrowLeft,
+    Download,
 } from "lucide-react";

@@ -4,11 +4,14 @@ import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
 
-from faster_whisper import WhisperModel
 import huggingface_hub
 import numpy as np
-import torchaudio
 import torch
+import torchaudio
+
+# Import torch before faster-whisper/CTranslate2. On Windows, both stacks load
+# cuDNN DLLs and the order affects which DLL is reused by the process.
+from faster_whisper import WhisperModel
 
 if not hasattr(torchaudio, "set_audio_backend"):
     torchaudio.set_audio_backend = lambda *args, **kwargs: None
@@ -34,7 +37,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.project import ProcessingJob, MeetingFile, Speaker, TranscriptSegment, MeetingVersion
+from app.models.project import ProcessingJob, Meeting, MeetingFile, Speaker, TranscriptSegment, MeetingVersion
 from app.core.supabase import get_storage_client
 
 # ---------------------------------------------------------------------------
@@ -42,6 +45,7 @@ from app.core.supabase import get_storage_client
 # ---------------------------------------------------------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
 compute_type = "float16" if device == "cuda" else "int8"
+diarization_device = device
 
 whisper_model: WhisperModel | None = None
 diarization_pipeline = None
@@ -80,9 +84,9 @@ def _initialize_models() -> None:
                     "pyannote/speaker-diarization-3.1",
                     use_auth_token=settings.HF_TOKEN,
                 )
-            if device == "cuda":
+            if diarization_device == "cuda":
                 diarization_pipeline.to(torch.device("cuda"))
-            print("✅ Pyannote loaded.")
+            print(f"✅ Pyannote loaded on {diarization_device}.")
         except Exception as exc:
             _diarization_failed = True   # FIX Bug 3: không dùng sentinel False nữa
             print(f"⚠️  Pyannote diarization disabled: {exc}")
@@ -146,6 +150,10 @@ async def process_meeting_audio_task(
         job = await db.scalar(select(ProcessingJob).where(ProcessingJob.id == job_id))
         if job:
             job.status = "running"
+            job.progress = 10
+            job.started_at = datetime.now(UTC)
+            job.updated_at = datetime.now(UTC)
+            job.updated_by = current_user_id
             await db.commit()
 
         # 2. Lấy thông tin file audio mới nhất
@@ -185,6 +193,10 @@ async def process_meeting_audio_task(
                 labels = annotation.labels()
                 turns_count = sum(1 for _ in annotation.itertracks(yield_label=True))
                 print(f"✅ Diarization xong. Số speakers: {len(labels)}, turns: {turns_count}")
+                if job:
+                    job.progress = 35
+                    job.updated_at = datetime.now(UTC)
+                    await db.commit()
             except Exception as exc:
                 annotation = None
                 print(f"⚠️  Diarization failed, fallback to UNKNOWN speaker: {exc}")
@@ -207,6 +219,10 @@ async def process_meeting_audio_task(
             f"✅ Whisper xong. Ngôn ngữ detect: {info.language} "
             f"({info.language_probability:.0%}), {len(whisper_segments)} segments."
         )
+        if job:
+            job.progress = 65
+            job.updated_at = datetime.now(UTC)
+            await db.commit()
 
         # Xóa file tạm sau khi cả 2 model đã xử lý xong
         os.remove(tmp_filepath)
@@ -321,6 +337,10 @@ async def process_meeting_audio_task(
             speaker_map[spk_label] = speaker_record
             
         await db.flush()
+        if job:
+            job.progress = 90
+            job.updated_at = datetime.now(UTC)
+            await db.commit()
 
         # 9. Lưu từng đoạn Transcript với speaker_id
         print("Ghi nhận transcript vào Database...")
@@ -342,9 +362,18 @@ async def process_meeting_audio_task(
             db.add(transcript_seg)
 
         # 10. Hoàn thành
-        job.status = "completed"
-        job.progress = 100
-        job.finished_at = datetime.now(UTC)
+        meeting = await db.scalar(select(Meeting).where(Meeting.id == meeting_id))
+        if meeting:
+            meeting.status = "completed"
+            meeting.updated_at = datetime.now(UTC)
+            meeting.updated_by = current_user_id
+
+        if job:
+            job.status = "completed"
+            job.progress = 100
+            job.finished_at = datetime.now(UTC)
+            job.updated_at = datetime.now(UTC)
+            job.updated_by = current_user_id
         await db.commit()
         print(f"✅ Xử lý thành công cuộc họp {meeting_id}!")
 
@@ -358,4 +387,11 @@ async def process_meeting_audio_task(
             job.status        = "failed"
             job.error_message = str(e)
             job.finished_at   = datetime.now(UTC)
-            await db.commit()
+            job.updated_at    = datetime.now(UTC)
+            job.updated_by    = current_user_id
+        meeting = await db.scalar(select(Meeting).where(Meeting.id == meeting_id))
+        if meeting:
+            meeting.status = "failed"
+            meeting.updated_at = datetime.now(UTC)
+            meeting.updated_by = current_user_id
+        await db.commit()

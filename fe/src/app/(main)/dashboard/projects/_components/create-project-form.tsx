@@ -29,18 +29,14 @@ export function CreateProjectForm() {
 
     startTransition(async () => {
       try {
-        await createProjectAction({
+        const project = await createProjectAction({
           code: code.trim(),
           name: name.trim(),
           description: description.trim() || undefined,
           status,
         });
         toast.success("Project created.");
-        setCode("");
-        setName("");
-        setDescription("");
-        setStatus("active");
-        router.refresh();
+        router.replace(`/dashboard/projects/${project.id}`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to create project.");
       }

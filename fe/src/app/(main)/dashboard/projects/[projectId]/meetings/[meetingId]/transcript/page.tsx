@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 
-import { getMeetingById, getTranscript } from "@/server/queries/meeting-queries";
+import { getMeetingById, getMeetingStatus, getTranscript } from "@/server/queries/meeting-queries";
 
 import { TranscriptClient } from "./transcript-client";
+import { TranscriptStatusWatcher } from "./transcript-status-watcher";
 
 export default async function TranscriptPage({
   params,
@@ -11,9 +12,10 @@ export default async function TranscriptPage({
 }) {
   const { meetingId } = await params;
 
-  const [meeting, transcript] = await Promise.all([
+  const [meeting, transcript, status] = await Promise.all([
     getMeetingById(meetingId).catch(() => null),
     getTranscript(meetingId).catch(() => null),
+    getMeetingStatus(meetingId).catch(() => null),
   ]);
 
   if (!meeting) {
@@ -22,6 +24,13 @@ export default async function TranscriptPage({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {status ? (
+        <TranscriptStatusWatcher
+          meetingId={meetingId}
+          initialStatus={status}
+          showPanel={!transcript || status.meeting_status === "processing"}
+        />
+      ) : null}
       {transcript ? (
         <TranscriptClient meetingId={meetingId} transcript={transcript} />
       ) : (
