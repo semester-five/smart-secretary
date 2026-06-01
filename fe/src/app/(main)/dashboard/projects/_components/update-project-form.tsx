@@ -8,11 +8,21 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ImagePlus, Save, Trash2 } from "@/lib/icons";
 import type { Project } from "@/server/api-actions";
-import { confirmMediaUploadAction, createPresignedUrlAction, updateProjectAction } from "@/server/api-actions";
+import {
+  confirmMediaUploadAction,
+  createPresignedUrlAction,
+  updateProjectAction,
+} from "@/server/api-actions";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -23,7 +33,9 @@ export function UpdateProjectForm({ project }: { project: Project }) {
   const [status, setStatus] = useState<"active" | "archived">(project.status);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [removeCover, setRemoveCover] = useState(false);
-  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(project.cover_image_url);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
+    project.cover_image_url,
+  );
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,7 +129,9 @@ export function UpdateProjectForm({ project }: { project: Project }) {
         toast.success("Project updated.");
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to update project.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to update project.",
+        );
       }
     });
   };
@@ -128,7 +142,11 @@ export function UpdateProjectForm({ project }: { project: Project }) {
         <label htmlFor="project-name" className="font-medium text-sm">
           Name
         </label>
-        <Input id="project-name" value={name} onChange={(event) => setName(event.target.value)} />
+        <Input
+          id="project-name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
       </div>
 
       <div className="space-y-1">
@@ -154,7 +172,11 @@ export function UpdateProjectForm({ project }: { project: Project }) {
               className="aspect-video w-full rounded-md object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <ImagePlus className="mr-2 size-4" /> Change Image
               </Button>
               <Button
@@ -177,8 +199,12 @@ export function UpdateProjectForm({ project }: { project: Project }) {
             onClick={() => fileInputRef.current?.click()}
           >
             <ImagePlus className="mb-2 size-8 text-muted-foreground/60" />
-            <span className="font-medium text-muted-foreground text-sm">Click to upload cover image</span>
-            <span className="mt-1 text-muted-foreground text-xs">JPG, PNG or WEBP (Max 5MB)</span>
+            <span className="font-medium text-muted-foreground text-sm">
+              Click to upload cover image
+            </span>
+            <span className="mt-1 text-muted-foreground text-xs">
+              JPG, PNG or WEBP (Max 5MB)
+            </span>
           </button>
         )}
         <Input
@@ -209,7 +235,10 @@ export function UpdateProjectForm({ project }: { project: Project }) {
           <label htmlFor="project-status" className="font-medium text-sm">
             Status
           </label>
-          <Select value={status} onValueChange={(value) => setStatus(value as "active" | "archived")}>
+          <Select
+            value={status}
+            onValueChange={(value) => setStatus(value as "active" | "archived")}
+          >
             <SelectTrigger id="project-status">
               <SelectValue placeholder="Choose status" />
             </SelectTrigger>
@@ -220,7 +249,12 @@ export function UpdateProjectForm({ project }: { project: Project }) {
           </Select>
         </div>
         <div className="flex justify-end pt-2">
-          <Button type="button" disabled={isPending} onClick={submit} className="w-full sm:w-auto">
+          <Button
+            type="button"
+            disabled={isPending}
+            onClick={submit}
+            className="w-full sm:w-auto"
+          >
             {isPending ? (
               "Saving..."
             ) : (
