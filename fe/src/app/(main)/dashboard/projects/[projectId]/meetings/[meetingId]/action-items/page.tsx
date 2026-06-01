@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 
-import { getMeetingById, listActionItems } from "@/server/queries/meeting-queries";
+import {
+  getMeetingById,
+  listActionItems,
+} from "@/server/queries/meeting-queries";
 
 import { ActionItemsClient } from "./action-items-client";
 
@@ -21,7 +24,7 @@ export default async function ActionItemsPage({
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="fade-in slide-in-from-bottom-4 animate-in duration-500">
       <ActionItemsClient meetingId={meetingId} initialItems={actionItems} />
     </div>
   );

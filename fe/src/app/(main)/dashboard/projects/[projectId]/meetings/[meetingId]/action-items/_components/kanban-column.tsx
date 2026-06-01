@@ -3,7 +3,10 @@
 import { useState } from "react";
 
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 import { Button } from "@/components/ui/button";
 import { Plus } from "@/lib/icons";
@@ -47,7 +50,12 @@ interface KanbanColumnProps {
   onAddCard: (title: string, status: ActionItem["status"]) => Promise<void>;
 }
 
-export function KanbanColumn({ status, items, onCardClick, onAddCard }: KanbanColumnProps) {
+export function KanbanColumn({
+  status,
+  items,
+  onCardClick,
+  onAddCard,
+}: KanbanColumnProps) {
   const [isAdding, setIsAdding] = useState(false);
   const config = COLUMN_CONFIG[status];
   const ids = items.map((i) => i.id);
@@ -57,14 +65,16 @@ export function KanbanColumn({ status, items, onCardClick, onAddCard }: KanbanCo
 
   return (
     <div
-      className={`flex flex-col rounded-xl border border-border border-t-2 bg-muted/30 min-h-[400px] w-full ${config.borderColor}`}
+      className={`flex min-h-[400px] w-full flex-col rounded-xl border border-border border-t-2 bg-muted/30 ${config.borderColor}`}
     >
       {/* Column Header */}
       <div className="flex items-center justify-between px-3 py-3">
-        <div className={`flex items-center gap-2 font-semibold text-sm ${config.headerColor}`}>
+        <div
+          className={`flex items-center gap-2 font-semibold text-sm ${config.headerColor}`}
+        >
           <span>{config.label}</span>
           <span
-            className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium ${config.badgeColor}`}
+            className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 font-medium text-xs ${config.badgeColor}`}
           >
             {items.length}
           </span>
@@ -72,10 +82,14 @@ export function KanbanColumn({ status, items, onCardClick, onAddCard }: KanbanCo
       </div>
 
       {/* Cards – droppable zone covers entire card list area */}
-      <div ref={setNodeRef} className="flex-1 px-2 pb-2 space-y-2">
+      <div ref={setNodeRef} className="flex-1 space-y-2 px-2 pb-2">
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {items.map((item) => (
-            <ActionItemCard key={item.id} item={item} onClick={() => onCardClick(item)} />
+            <ActionItemCard
+              key={item.id}
+              item={item}
+              onClick={() => onCardClick(item)}
+            />
           ))}
         </SortableContext>
 
@@ -106,7 +120,7 @@ export function KanbanColumn({ status, items, onCardClick, onAddCard }: KanbanCo
             type="button"
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground h-8 text-xs"
+            className="h-8 w-full justify-start gap-2 text-muted-foreground text-xs hover:text-foreground"
             onClick={() => setIsAdding(true)}
           >
             <Plus className="size-3.5" />

@@ -2,11 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Captions, CheckSquare, Download, FileText } from "@/lib/icons";
-import { getMeetingById, getMeetingStatus } from "@/server/queries/meeting-queries";
+import {
+  getMeetingById,
+  getMeetingStatus,
+} from "@/server/queries/meeting-queries";
 
-export async function generateMetadata({ params }: { params: Promise<{ projectId: string; meetingId: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string; meetingId: string }>;
+}) {
   const { meetingId } = await params;
   // getMeetingById uses React cache() — deduplicated with the page component below.
   const meeting = await getMeetingById(meetingId).catch(() => null);
@@ -39,23 +52,27 @@ export default async function MeetingOverviewPage({
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="fade-in slide-in-from-bottom-4 animate-in space-y-6 duration-500">
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Meeting summary</CardTitle>
-          <CardDescription>Draft metadata and lifecycle controls for this meeting.</CardDescription>
+          <CardDescription>
+            Draft metadata and lifecycle controls for this meeting.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border p-3 bg-muted/10">
+            <div className="rounded-lg border bg-muted/10 p-3">
               <p className="text-muted-foreground text-xs">Meeting ID</p>
               <p className="mt-1 break-all font-mono text-xs">{meeting.id}</p>
             </div>
-            <div className="rounded-lg border p-3 bg-muted/10">
+            <div className="rounded-lg border bg-muted/10 p-3">
               <p className="text-muted-foreground text-xs">Project ID</p>
-              <p className="mt-1 break-all font-mono text-xs">{meeting.project_id}</p>
+              <p className="mt-1 break-all font-mono text-xs">
+                {meeting.project_id}
+              </p>
             </div>
-            <div className="rounded-lg border p-3 bg-muted/10">
+            <div className="rounded-lg border bg-muted/10 p-3">
               <p className="text-muted-foreground text-xs">Files uploaded</p>
               <p className="mt-1 font-semibold">{status.file_count}</p>
             </div>
@@ -66,38 +83,46 @@ export default async function MeetingOverviewPage({
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Review workspace</CardTitle>
-          <CardDescription>Open transcript, summary, and action items work areas.</CardDescription>
+          <CardDescription>
+            Open transcript, summary, and action items work areas.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           <Link
             href={`/dashboard/projects/${projectId}/meetings/${meetingId}/transcript`}
-            className="rounded-lg border p-4 transition-all hover:bg-muted/30 hover:border-primary/50 group"
+            className="group rounded-lg border p-4 transition-all hover:border-primary/50 hover:bg-muted/30"
           >
-            <p className="inline-flex items-center gap-2 font-medium text-sm group-hover:text-primary transition-colors">
+            <p className="inline-flex items-center gap-2 font-medium text-sm transition-colors group-hover:text-primary">
               <Captions className="size-5" />
               Transcript
             </p>
-            <p className="mt-2 text-muted-foreground text-xs">Review and edit transcript segments.</p>
+            <p className="mt-2 text-muted-foreground text-xs">
+              Review and edit transcript segments.
+            </p>
           </Link>
           <Link
             href={`/dashboard/projects/${projectId}/meetings/${meetingId}/summary`}
-            className="rounded-lg border p-4 transition-all hover:bg-muted/30 hover:border-primary/50 group"
+            className="group rounded-lg border p-4 transition-all hover:border-primary/50 hover:bg-muted/30"
           >
-            <p className="inline-flex items-center gap-2 font-medium text-sm group-hover:text-primary transition-colors">
+            <p className="inline-flex items-center gap-2 font-medium text-sm transition-colors group-hover:text-primary">
               <FileText className="size-5" />
               Summary
             </p>
-            <p className="mt-2 text-muted-foreground text-xs">Read and update meeting summary.</p>
+            <p className="mt-2 text-muted-foreground text-xs">
+              Read and update meeting summary.
+            </p>
           </Link>
           <Link
             href={`/dashboard/projects/${projectId}/meetings/${meetingId}/action-items`}
-            className="rounded-lg border p-4 transition-all hover:bg-muted/30 hover:border-primary/50 group"
+            className="group rounded-lg border p-4 transition-all hover:border-primary/50 hover:bg-muted/30"
           >
-            <p className="inline-flex items-center gap-2 font-medium text-sm group-hover:text-primary transition-colors">
+            <p className="inline-flex items-center gap-2 font-medium text-sm transition-colors group-hover:text-primary">
               <CheckSquare className="size-5" />
               Action items
             </p>
-            <p className="mt-2 text-muted-foreground text-xs">Track meeting tasks and assignees.</p>
+            <p className="mt-2 text-muted-foreground text-xs">
+              Track meeting tasks and assignees.
+            </p>
           </Link>
         </CardContent>
       </Card>
@@ -105,7 +130,10 @@ export default async function MeetingOverviewPage({
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Export official minutes</CardTitle>
-          <CardDescription>Download a meeting record with summary, key points, decisions, tasks, and transcript.</CardDescription>
+          <CardDescription>
+            Download a meeting record with summary, key points, decisions,
+            tasks, and transcript.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row">
           <Button asChild className="w-full gap-2 sm:w-auto">

@@ -62,7 +62,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-async function refreshSessionAndContinue(request: NextRequest, refreshToken: string) {
+async function _refreshSessionAndContinue(request: NextRequest, refreshToken: string) {
   try {
     const response = await fetch(`${API_URL}/api/v1/auth/refresh`, {
       method: "POST",

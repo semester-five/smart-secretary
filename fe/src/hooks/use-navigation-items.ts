@@ -5,9 +5,8 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 
 import { Calendar, FolderKanban, Settings, Users } from "@/lib/icons";
-
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 import type { NavGroup } from "@/navigation/sidebar/sidebar-items";
+import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 interface UseNavigationItemsOptions {
   isSuperuser?: boolean;

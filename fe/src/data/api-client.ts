@@ -103,10 +103,7 @@ export async function clientListActionItems(meetingId: string): Promise<ActionIt
   return fetchJson<ActionItem[]>(`${API_BASE}/meetings/${meetingId}/action-items`);
 }
 
-export async function clientCreateActionItem(
-  meetingId: string,
-  payload: ActionItemCreatePayload,
-): Promise<ActionItem> {
+export async function clientCreateActionItem(meetingId: string, payload: ActionItemCreatePayload): Promise<ActionItem> {
   return fetchJson<ActionItem>(`${API_BASE}/meetings/${meetingId}/action-items`, {
     method: "POST",
     body: JSON.stringify(payload),

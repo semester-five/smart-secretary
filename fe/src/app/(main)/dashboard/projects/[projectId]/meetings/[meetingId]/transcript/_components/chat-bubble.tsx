@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "@/lib/icons";
 import type { Speaker, TranscriptSegment } from "@/server/api-actions";
@@ -104,33 +110,46 @@ export function ChatBubble({
   onCancel,
 }: ChatBubbleProps) {
   return (
-    <div className="group flex gap-3 animate-in fade-in duration-150">
+    <div className="group fade-in flex animate-in gap-3 duration-150">
       {/* Color dot */}
-      <div className="flex flex-col items-center gap-1 pt-1 shrink-0">
+      <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
         <div className={`size-2.5 rounded-full ${color.dotClass}`} />
-        {isEditing && <div className={`w-px flex-1 ${color.accentBarClass} opacity-30`} />}
+        {isEditing && (
+          <div className={`w-px flex-1 ${color.accentBarClass} opacity-30`} />
+        )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 pb-1">
+      <div className="min-w-0 flex-1 pb-1">
         {/* Speaker name + timestamp */}
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className={`text-xs font-semibold tracking-tight ${color.textClass}`}>{speakerName}</span>
-          <span className="text-xs text-muted-foreground/50">
+        <div className="mb-1 flex items-baseline gap-2">
+          <span
+            className={`font-semibold text-xs tracking-tight ${color.textClass}`}
+          >
+            {speakerName}
+          </span>
+          <span className="text-muted-foreground/50 text-xs">
             {formatMs(segment.start_ms)} – {formatMs(segment.end_ms)}
           </span>
-          {segment.source === "ai" && <span className="text-[10px] text-muted-foreground/40 ml-auto">AI</span>}
+          {segment.source === "ai" && (
+            <span className="ml-auto text-[10px] text-muted-foreground/40">
+              AI
+            </span>
+          )}
         </div>
 
         {/* Bubble */}
         <div
-          className={`rounded-2xl rounded-tl-none border border-border/50 px-4 py-2.5 ${color.bgClass} transition-colors duration-150 ${!isEditing ? "hover:brightness-110 cursor-text" : ""}`}
+          className={`rounded-2xl rounded-tl-none border border-border/50 px-4 py-2.5 ${color.bgClass} transition-colors duration-150 ${!isEditing ? "cursor-text hover:brightness-110" : ""}`}
         >
           {isEditing ? (
             <div className="space-y-3">
               <div className="w-[200px]">
-                <Select value={draftSpeakerId} onValueChange={onDraftSpeakerChange}>
-                  <SelectTrigger className="h-7 text-xs bg-transparent border-border/50">
+                <Select
+                  value={draftSpeakerId}
+                  onValueChange={onDraftSpeakerChange}
+                >
+                  <SelectTrigger className="h-7 border-border/50 bg-transparent text-xs">
                     <SelectValue placeholder="Select speaker" />
                   </SelectTrigger>
                   <SelectContent>
@@ -146,27 +165,48 @@ export function ChatBubble({
                 value={draft}
                 onChange={(e) => onDraftChange(e.target.value)}
                 rows={Math.max(2, (draft.match(/\n/g)?.length ?? 0) + 1)}
-                className="text-sm bg-transparent border-0 p-0 resize-none focus-visible:ring-0 shadow-none min-h-0 leading-relaxed"
+                className="min-h-0 resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Escape") onCancel();
                   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) onSave();
                 }}
               />
-              <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/40">
-                <Button size="sm" className="h-6 px-2.5 text-xs" onClick={onSave} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="size-3 animate-spin" /> : "Save"}
+              <div className="flex items-center gap-1.5 border-border/40 border-t pt-1.5">
+                <Button
+                  size="sm"
+                  className="h-6 px-2.5 text-xs"
+                  onClick={onSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    "Save"
+                  )}
                 </Button>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onCancel} disabled={isSaving}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  onClick={onCancel}
+                  disabled={isSaving}
+                >
                   Cancel
                 </Button>
-                <span className="ml-auto text-[10px] text-muted-foreground/40">Ctrl+Enter</span>
+                <span className="ml-auto text-[10px] text-muted-foreground/40">
+                  Ctrl+Enter
+                </span>
               </div>
             </div>
           ) : (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap" onClick={onStartEdit}>
+            <button
+              type="button"
+              className="w-full whitespace-pre-wrap bg-transparent p-0 text-left text-sm leading-relaxed"
+              onClick={onStartEdit}
+            >
               {segment.text}
-            </p>
+            </button>
           )}
         </div>
       </div>

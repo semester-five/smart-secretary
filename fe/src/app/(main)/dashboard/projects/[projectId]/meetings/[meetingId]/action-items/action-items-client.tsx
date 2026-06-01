@@ -15,12 +15,12 @@ import {
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
-import type { ActionItem, ActionItemUpdatePayload } from "@/server/api-actions";
 import {
   clientCreateActionItem,
   clientDeleteActionItem,
   clientUpdateActionItem,
 } from "@/data/api-client";
+import type { ActionItem, ActionItemUpdatePayload } from "@/server/api-actions";
 
 import { ActionItemCard } from "./_components/action-item-card";
 import { ActionItemDetailSheet } from "./_components/action-item-detail-sheet";
@@ -28,7 +28,15 @@ import { KanbanColumn } from "./_components/kanban-column";
 
 const COLUMN_ORDER: ActionItem["status"][] = ["open", "in_progress", "done"];
 
-export function ActionItemsClient({ meetingId, initialItems }: { meetingId: string; initialItems: ActionItem[] }) {
+const ignoreOverlayClick = () => undefined;
+
+export function ActionItemsClient({
+  meetingId,
+  initialItems,
+}: {
+  meetingId: string;
+  initialItems: ActionItem[];
+}) {
   const [items, setItems] = useState<ActionItem[]>(initialItems);
   const [activeItem, setActiveItem] = useState<ActionItem | null>(null);
   const [selectedItem, setSelectedItem] = useState<ActionItem | null>(null);
@@ -43,7 +51,10 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
   );
 
   // Group items by status
-  const columnItems = useCallback((status: ActionItem["status"]) => items.filter((i) => i.status === status), [items]);
+  const columnItems = useCallback(
+    (status: ActionItem["status"]) => items.filter((i) => i.status === status),
+    [items],
+  );
 
   // Drag start
   const handleDragStart = (event: DragStartEvent) => {
@@ -70,7 +81,11 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
     if (!activeItemData) return;
 
     // overId is either a column status ("open", "in_progress", "done") or a card UUID
-    const validStatuses: ActionItem["status"][] = ["open", "in_progress", "done"];
+    const validStatuses: ActionItem["status"][] = [
+      "open",
+      "in_progress",
+      "done",
+    ];
     const isColumnDrop = validStatuses.includes(overId as ActionItem["status"]);
     const overItem = items.find((i) => i.id === overId);
     const targetStatus: ActionItem["status"] = isColumnDrop
@@ -83,7 +98,9 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
 
     // Optimistic update
     setItems((prev) => {
-      let updated = prev.map((i) => (i.id === activeId ? { ...i, status: targetStatus } : i));
+      let updated = prev.map((i) =>
+        i.id === activeId ? { ...i, status: targetStatus } : i,
+      );
 
       if (sameColumn && !isColumnDrop) {
         const activeIdx = updated.findIndex((i) => i.id === activeId);
@@ -98,7 +115,9 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
     // If status changed, persist via API
     if (!sameColumn) {
       try {
-        await clientUpdateActionItem(meetingId, activeId, { status: targetStatus });
+        await clientUpdateActionItem(meetingId, activeId, {
+          status: targetStatus,
+        });
         toast.success("Item moved.");
       } catch {
         setItems(initialItems);
@@ -164,8 +183,19 @@ export function ActionItemsClient({ meetingId, initialItems }: { meetingId: stri
         </div>
 
         {/* Drag overlay – ghost card while dragging */}
-        <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
-          {activeItem ? <ActionItemCard item={activeItem} onClick={() => {}} overlay /> : null}
+        <DragOverlay
+          dropAnimation={{
+            duration: 150,
+            easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+          }}
+        >
+          {activeItem ? (
+            <ActionItemCard
+              item={activeItem}
+              onClick={ignoreOverlayClick}
+              overlay
+            />
+          ) : null}
         </DragOverlay>
       </DndContext>
 
