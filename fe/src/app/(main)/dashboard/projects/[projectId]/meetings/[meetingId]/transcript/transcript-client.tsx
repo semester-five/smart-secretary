@@ -10,26 +10,42 @@ import {
   createMeetingVersionAction,
   type Transcript,
   type TranscriptSegment,
-  updateSpeakerAction,
   updateTranscriptSegmentAction,
 } from "@/server/api-actions";
 
-import { ChatBubble, formatMs, SPEAKER_COLORS } from "./_components/chat-bubble";
+import {
+  ChatBubble,
+  formatMs,
+  SPEAKER_COLORS,
+} from "./_components/chat-bubble";
 import { VersionPanel } from "./_components/version-panel";
 
 // ─── Gap threshold for time separator (ms) ────────────────────────────────────
 const TIME_SEPARATOR_GAP_MS = 60_000;
 
-export function TranscriptClient({ meetingId, transcript }: { meetingId: string; transcript: Transcript }) {
+export function TranscriptClient({
+  meetingId,
+  transcript,
+}: {
+  meetingId: string;
+  transcript: Transcript;
+}) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [_isPending, startTransition] = useTransition();
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [savingSegmentId, setSavingSegmentId] = useState<string | null>(null);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
 
   // Editable segment drafts {text, speakerId}
-  const [segmentDrafts, setSegmentDrafts] = useState<Record<string, { text: string; speakerId: string }>>(() =>
-    Object.fromEntries(transcript.segments.map((s) => [s.id, { text: s.text, speakerId: s.speaker_id }])),
+  const [segmentDrafts, setSegmentDrafts] = useState<
+    Record<string, { text: string; speakerId: string }>
+  >(() =>
+    Object.fromEntries(
+      transcript.segments.map((s) => [
+        s.id,
+        { text: s.text, speakerId: s.speaker_id },
+      ]),
+    ),
   );
 
   // Lookup speaker by ID
@@ -45,7 +61,10 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
   const getColorForSegment = (segment: TranscriptSegment) => {
     const speaker = getSpeakerForSegment(segment);
     if (speaker) {
-      return SPEAKER_COLORS.find((c) => c.id === speaker.color_label) ?? SPEAKER_COLORS[0];
+      return (
+        SPEAKER_COLORS.find((c) => c.id === speaker.color_label) ??
+        SPEAKER_COLORS[0]
+      );
     }
     return SPEAKER_COLORS[0];
   };
@@ -72,12 +91,17 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
     startTransition(async () => {
       try {
         setSavingSegmentId(segmentId);
-        await updateTranscriptSegmentAction(meetingId, segmentId, { text, speaker_id: draft.speakerId });
+        await updateTranscriptSegmentAction(meetingId, segmentId, {
+          text,
+          speaker_id: draft.speakerId,
+        });
         toast.success("Segment saved.");
         setEditingSegmentId(null);
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to save segment.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to save segment.",
+        );
       } finally {
         setSavingSegmentId(null);
       }
@@ -95,7 +119,9 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
         toast.success("Version snapshot created.");
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to create version.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create version.",
+        );
       } finally {
         setIsCreatingVersion(false);
       }
@@ -113,13 +139,17 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex gap-6 items-start">
+    <div className="flex items-start gap-6">
       {/* ── Left: conversation view ───────────────────────────────────────── */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         {transcript.segments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed">
-            <p className="font-medium text-muted-foreground">No transcript segments</p>
-            <p className="mt-1 text-sm text-muted-foreground/60">Process the meeting audio to generate a transcript.</p>
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+            <p className="font-medium text-muted-foreground">
+              No transcript segments
+            </p>
+            <p className="mt-1 text-muted-foreground/60 text-sm">
+              Process the meeting audio to generate a transcript.
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -131,12 +161,12 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
                 <div key={segment.id}>
                   {/* Time separator */}
                   {needsTimeSeparator(idx) && (
-                    <div className="flex items-center gap-3 my-4">
-                      <div className="flex-1 h-px bg-border/40" />
-                      <span className="text-[11px] text-muted-foreground/40 shrink-0 tabular-nums">
+                    <div className="my-4 flex items-center gap-3">
+                      <div className="h-px flex-1 bg-border/40" />
+                      <span className="shrink-0 text-[11px] text-muted-foreground/40 tabular-nums">
                         {formatMs(segment.start_ms)}
                       </span>
-                      <div className="flex-1 h-px bg-border/40" />
+                      <div className="h-px flex-1 bg-border/40" />
                     </div>
                   )}
 
@@ -146,32 +176,48 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
                     color={color}
                     isEditing={editingSegmentId === segment.id}
                     draft={segmentDrafts[segment.id]?.text ?? segment.text}
-                    draftSpeakerId={segmentDrafts[segment.id]?.speakerId ?? segment.speaker_id}
+                    draftSpeakerId={
+                      segmentDrafts[segment.id]?.speakerId ?? segment.speaker_id
+                    }
                     allSpeakers={transcript.speakers}
                     isSaving={savingSegmentId === segment.id}
                     onStartEdit={() => {
                       if (editingSegmentId && editingSegmentId !== segment.id) {
-                        const original = transcript.segments.find((s) => s.id === editingSegmentId);
+                        const original = transcript.segments.find(
+                          (s) => s.id === editingSegmentId,
+                        );
                         if (original) {
                           setSegmentDrafts((prev) => ({
                             ...prev,
-                            [editingSegmentId]: { text: original.text, speakerId: original.speaker_id },
+                            [editingSegmentId]: {
+                              text: original.text,
+                              speakerId: original.speaker_id,
+                            },
                           }));
                         }
                       }
                       setEditingSegmentId(segment.id);
                     }}
                     onDraftChange={(text) =>
-                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: { ...prev[segment.id], text } }))
+                      setSegmentDrafts((prev) => ({
+                        ...prev,
+                        [segment.id]: { ...prev[segment.id], text },
+                      }))
                     }
                     onDraftSpeakerChange={(speakerId) =>
-                      setSegmentDrafts((prev) => ({ ...prev, [segment.id]: { ...prev[segment.id], speakerId } }))
+                      setSegmentDrafts((prev) => ({
+                        ...prev,
+                        [segment.id]: { ...prev[segment.id], speakerId },
+                      }))
                     }
                     onSave={() => saveSegment(segment.id)}
                     onCancel={() => {
                       setSegmentDrafts((prev) => ({
                         ...prev,
-                        [segment.id]: { text: segment.text, speakerId: segment.speaker_id },
+                        [segment.id]: {
+                          text: segment.text,
+                          speakerId: segment.speaker_id,
+                        },
                       }));
                       setEditingSegmentId(null);
                     }}
@@ -184,9 +230,9 @@ export function TranscriptClient({ meetingId, transcript }: { meetingId: string;
       </div>
 
       {/* ── Right: control panel ──────────────────────────────────────────── */}
-      <div className="w-72 shrink-0 space-y-4 sticky top-6">
+      <div className="sticky top-6 w-72 shrink-0 space-y-4">
         {/* Stats */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground px-1">
+        <div className="flex items-center gap-3 px-1 text-muted-foreground text-xs">
           <span>{transcript.segments.length} segments</span>
           <span className="text-border">·</span>
           <span>{transcript.speakers.length} speakers</span>
