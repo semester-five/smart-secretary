@@ -7,9 +7,21 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Globe, Loader2, WandSparkles } from "@/lib/icons";
 import {
@@ -30,9 +42,13 @@ const summaryLanguageOptions: Array<{
   { value: "en", label: "English" },
 ];
 
-function getInitialSummaryLanguage(summary: MeetingSummary | null): SummaryLanguage {
+function getInitialSummaryLanguage(
+  summary: MeetingSummary | null,
+): SummaryLanguage {
   const requestedLanguage = summary?.key_points_json?.requested_language;
-  return requestedLanguage === "vi" || requestedLanguage === "en" ? requestedLanguage : "auto";
+  return requestedLanguage === "vi" || requestedLanguage === "en"
+    ? requestedLanguage
+    : "auto";
 }
 
 export function SummaryClient({
@@ -44,9 +60,15 @@ export function SummaryClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [activeAction, setActiveAction] = useState<"generate" | "save" | "snapshot" | null>(null);
-  const [summaryText, setSummaryText] = useState(initialSummary?.summary_text ?? "");
-  const [summaryLanguage, setSummaryLanguage] = useState<SummaryLanguage>(getInitialSummaryLanguage(initialSummary));
+  const [activeAction, setActiveAction] = useState<
+    "generate" | "save" | "snapshot" | null
+  >(null);
+  const [summaryText, setSummaryText] = useState(
+    initialSummary?.summary_text ?? "",
+  );
+  const [summaryLanguage, setSummaryLanguage] = useState<SummaryLanguage>(
+    getInitialSummaryLanguage(initialSummary),
+  );
   const [changeNote, setChangeNote] = useState("");
 
   const generateSummary = () => {
@@ -66,14 +88,20 @@ export function SummaryClient({
             }
             if (latestJob.status === "failed") {
               window.clearInterval(poll);
-              toast.error(latestJob.error_message ?? "Summary generation failed.");
+              toast.error(
+                latestJob.error_message ?? "Summary generation failed.",
+              );
             }
           } catch {
             window.clearInterval(poll);
           }
         }, 2500);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to queue summary generation.");
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to queue summary generation.",
+        );
       } finally {
         setActiveAction(null);
       }
@@ -98,7 +126,9 @@ export function SummaryClient({
         toast.success("Summary updated.");
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to update summary.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to update summary.",
+        );
       } finally {
         setActiveAction(null);
       }
@@ -116,7 +146,9 @@ export function SummaryClient({
         setChangeNote("");
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to create version.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create version.",
+        );
       } finally {
         setActiveAction(null);
       }
@@ -128,14 +160,22 @@ export function SummaryClient({
       <Card>
         <CardHeader>
           <CardTitle>Summary editor</CardTitle>
-          <CardDescription>Generate with AI or manually refine the summary content.</CardDescription>
+          <CardDescription>
+            Generate with AI or manually refine the summary content.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea value={summaryText} onChange={(event) => setSummaryText(event.target.value)} rows={10} />
+          <Textarea
+            value={summaryText}
+            onChange={(event) => setSummaryText(event.target.value)}
+            rows={10}
+          />
           <div className="flex flex-wrap items-center gap-2">
             <Select
               value={summaryLanguage}
-              onValueChange={(value) => setSummaryLanguage(value as SummaryLanguage)}
+              onValueChange={(value) =>
+                setSummaryLanguage(value as SummaryLanguage)
+              }
               disabled={isPending && activeAction === "generate"}
             >
               <SelectTrigger className="w-[180px]">
@@ -163,8 +203,14 @@ export function SummaryClient({
               )}
               Generate summary
             </Button>
-            <Button type="button" disabled={isPending && activeAction === "save"} onClick={saveSummary}>
-              {isPending && activeAction === "save" ? <Loader2 className="size-4 animate-spin" /> : null}
+            <Button
+              type="button"
+              disabled={isPending && activeAction === "save"}
+              onClick={saveSummary}
+            >
+              {isPending && activeAction === "save" ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : null}
               Save summary
             </Button>
           </div>
@@ -174,7 +220,9 @@ export function SummaryClient({
       <Card>
         <CardHeader>
           <CardTitle>Version snapshot</CardTitle>
-          <CardDescription>Create a snapshot after manual summary updates.</CardDescription>
+          <CardDescription>
+            Create a snapshot after manual summary updates.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Input
@@ -182,8 +230,14 @@ export function SummaryClient({
             onChange={(event) => setChangeNote(event.target.value)}
             placeholder="Change note (optional)"
           />
-          <Button type="button" disabled={isPending && activeAction === "snapshot"} onClick={createSnapshot}>
-            {isPending && activeAction === "snapshot" ? <Loader2 className="size-4 animate-spin" /> : null}
+          <Button
+            type="button"
+            disabled={isPending && activeAction === "snapshot"}
+            onClick={createSnapshot}
+          >
+            {isPending && activeAction === "snapshot" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : null}
             Create version
           </Button>
         </CardContent>

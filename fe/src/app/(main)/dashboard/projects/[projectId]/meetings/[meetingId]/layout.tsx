@@ -71,10 +71,18 @@ export default async function MeetingLayout({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">{meeting.title}</h1>
-          <p className="mt-1 text-muted-foreground text-sm">{new Date(meeting.meeting_date).toLocaleString()}</p>
+          <h1 className="font-semibold text-2xl tracking-tight">
+            {meeting.title}
+          </h1>
+          <p className="mt-1 text-muted-foreground text-sm">
+            {new Date(meeting.meeting_date).toLocaleString()}
+          </p>
         </div>
-        <Badge variant={meeting.status === "processing" ? "default" : "secondary"}>{meeting.status}</Badge>
+        <Badge
+          variant={meeting.status === "processing" ? "default" : "secondary"}
+        >
+          {meeting.status}
+        </Badge>
       </div>
 
       <MeetingTabs tabs={tabs} />

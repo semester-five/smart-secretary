@@ -6,10 +6,10 @@ import { redirect } from "next/navigation";
 import {
   apiRequest,
   clearAuthCookies,
-  UnauthorizedError,
   refreshAccessTokenIfPossible,
   setAuthCookies,
   type TokenResponse,
+  UnauthorizedError,
 } from "@/server/api-client";
 
 const API_URL = process.env.API_URL ?? "http://localhost:8000";
