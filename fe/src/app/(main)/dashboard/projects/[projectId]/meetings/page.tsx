@@ -1,7 +1,10 @@
 import Link from "next/link";
 
 import { ArrowLeft, Search } from "@/lib/icons";
-import { getProjectById, listProjectMeetings } from "@/server/queries/project-queries";
+import {
+  getProjectById,
+  listProjectMeetings,
+} from "@/server/queries/project-queries";
 
 import { MeetingsClient } from "./_components/meetings-client";
 
@@ -9,7 +12,11 @@ export const metadata = {
   title: "Meetings - Smart Secretary",
 };
 
-export default async function ProjectMeetingsPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ProjectMeetingsPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
 
   const [project, meetings] = await Promise.all([
@@ -21,7 +28,9 @@ export default async function ProjectMeetingsPage({ params }: { params: Promise<
     return (
       <div className="space-y-4">
         <h1 className="font-semibold text-2xl">Meetings</h1>
-        <p className="text-muted-foreground text-sm">Project not found or no permission.</p>
+        <p className="text-muted-foreground text-sm">
+          Project not found or no permission.
+        </p>
       </div>
     );
   }

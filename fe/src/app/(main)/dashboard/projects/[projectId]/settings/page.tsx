@@ -1,21 +1,37 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ArrowLeft, Settings } from "@/lib/icons";
 import { getProjectById } from "@/server/queries/project-queries";
 
 import { UpdateProjectForm } from "../../_components/update-project-form";
 
-export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
   const project = await getProjectById(projectId).catch(() => null);
   return {
-    title: project ? `Settings: ${project.name} - Smart Secretary` : "Project Settings",
+    title: project
+      ? `Settings: ${project.name} - Smart Secretary`
+      : "Project Settings",
   };
 }
 
-export default async function ProjectSettingsPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ProjectSettingsPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
 
   const project = await getProjectById(projectId).catch(() => null);
@@ -40,13 +56,17 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
           <Settings className="size-6 text-muted-foreground" />
           Project Settings
         </h1>
-        <p className="mt-1 text-muted-foreground text-sm">Update configuration for {project.name}.</p>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Update configuration for {project.name}.
+        </p>
       </div>
 
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Project Configuration</CardTitle>
-          <CardDescription>Update name, description, and status settings.</CardDescription>
+          <CardDescription>
+            Update name, description, and status settings.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <UpdateProjectForm project={project} />
@@ -56,12 +76,14 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       <Card className="shadow-sm border-destructive/20">
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          <CardDescription>Irreversible and destructive actions.</CardDescription>
+          <CardDescription>
+            Irreversible and destructive actions.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Deleting this project will permanently remove all associated meetings, audio files, and generated
-            transcripts.
+            Deleting this project will permanently remove all associated
+            meetings, audio files, and generated transcripts.
           </p>
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-center">
             <span className="text-sm font-medium text-destructive opacity-80">

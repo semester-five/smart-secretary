@@ -2,11 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Calendar, Clock, PlayCircle, User } from "@/lib/icons";
-import { getProjectById, listProjectMeetings } from "@/server/queries/project-queries";
+import {
+  getProjectById,
+  listProjectMeetings,
+} from "@/server/queries/project-queries";
 
-export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
   // getProjectById is wrapped in React cache() — this call is deduplicated
   // with the one in the page component below. Only 1 API call is made.
@@ -16,7 +29,11 @@ export async function generateMetadata({ params }: { params: Promise<{ projectId
   };
 }
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
 
   // Both calls run in parallel and getProjectById is deduped with generateMetadata.
@@ -44,10 +61,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-6 shadow-sm">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">{project.name}</h1>
-          <p className="font-mono text-muted-foreground text-sm mt-1">Code: {project.code}</p>
+          <h1 className="font-semibold text-2xl tracking-tight">
+            {project.name}
+          </h1>
+          <p className="font-mono text-muted-foreground text-sm mt-1">
+            Code: {project.code}
+          </p>
         </div>
-        <Badge variant={project.status === "active" ? "default" : "secondary"} className="h-6 px-3">
+        <Badge
+          variant={project.status === "active" ? "default" : "secondary"}
+          className="h-6 px-3"
+        >
           {project.status}
         </Badge>
       </div>
@@ -59,7 +83,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <User className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="truncate font-mono text-sm text-muted-foreground" title={String(project.owner_id)}>
+            <div
+              className="truncate font-mono text-sm text-muted-foreground"
+              title={String(project.owner_id)}
+            >
               {project.owner_id}
             </div>
           </CardContent>
@@ -70,7 +97,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <Clock className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-bold text-xl">{new Date(project.created_at).toLocaleDateString()}</div>
+            <div className="font-bold text-xl">
+              {new Date(project.created_at).toLocaleDateString()}
+            </div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -87,7 +116,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Get started</CardTitle>
-          <CardDescription>Jump directly into what matters most for this project.</CardDescription>
+          <CardDescription>
+            Jump directly into what matters most for this project.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Link
@@ -98,8 +129,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               <PlayCircle className="size-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold group-hover:text-primary transition-colors">Go to Meetings</p>
-              <p className="mt-0.5 text-muted-foreground text-xs">Create, upload, and review your meeting records.</p>
+              <p className="font-semibold group-hover:text-primary transition-colors">
+                Go to Meetings
+              </p>
+              <p className="mt-0.5 text-muted-foreground text-xs">
+                Create, upload, and review your meeting records.
+              </p>
             </div>
           </Link>
         </CardContent>

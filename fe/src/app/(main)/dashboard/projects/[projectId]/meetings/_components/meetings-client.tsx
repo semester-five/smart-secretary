@@ -5,7 +5,13 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Calendar, CalendarX, ClipboardPlus } from "@/lib/icons";
 import type { Meeting, Project } from "@/server/api-actions";
 
@@ -16,13 +22,18 @@ type MeetingsClientProps = {
   initialMeetings: Meeting[];
 };
 
-export function MeetingsClient({ project, initialMeetings }: MeetingsClientProps) {
+export function MeetingsClient({
+  project,
+  initialMeetings,
+}: MeetingsClientProps) {
   const [meetings, setMeetings] = useState(initialMeetings);
 
   const sortedMeetings = useMemo(
     () =>
       [...meetings].sort(
-        (first, second) => new Date(second.meeting_date).getTime() - new Date(first.meeting_date).getTime(),
+        (first, second) =>
+          new Date(second.meeting_date).getTime() -
+          new Date(first.meeting_date).getTime(),
       ),
     [meetings],
   );
@@ -42,7 +53,10 @@ export function MeetingsClient({ project, initialMeetings }: MeetingsClientProps
             <ClipboardPlus className="size-5" />
             Create meeting draft
           </CardTitle>
-          <CardDescription>Create a meeting record before uploading audio and starting processing.</CardDescription>
+          <CardDescription>
+            Create a meeting record before uploading audio and starting
+            processing.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <CreateMeetingForm projectId={project.id} onCreated={handleCreated} />
@@ -55,7 +69,9 @@ export function MeetingsClient({ project, initialMeetings }: MeetingsClientProps
             <Calendar className="size-5" />
             Meeting timeline
           </CardTitle>
-          <CardDescription>View upcoming and past meetings scheduled for this project.</CardDescription>
+          <CardDescription>
+            View upcoming and past meetings scheduled for this project.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {sortedMeetings.length > 0 ? (
@@ -73,7 +89,13 @@ export function MeetingsClient({ project, initialMeetings }: MeetingsClientProps
                       {new Date(meeting.meeting_date).toLocaleString()}
                     </p>
                   </div>
-                  <Badge variant={meeting.status === "processing" ? "default" : "secondary"}>{meeting.status}</Badge>
+                  <Badge
+                    variant={
+                      meeting.status === "processing" ? "default" : "secondary"
+                    }
+                  >
+                    {meeting.status}
+                  </Badge>
                 </div>
               </Link>
             ))
@@ -84,8 +106,8 @@ export function MeetingsClient({ project, initialMeetings }: MeetingsClientProps
               </div>
               <p className="font-semibold text-base">No meetings scheduled</p>
               <p className="mt-1 max-w-sm text-muted-foreground text-sm">
-                Get started by creating a new meeting draft above. Once created, you can upload meeting audio for
-                processing.
+                Get started by creating a new meeting draft above. Once created,
+                you can upload meeting audio for processing.
               </p>
             </div>
           )}
