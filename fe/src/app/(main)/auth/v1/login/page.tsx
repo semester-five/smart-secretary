@@ -13,8 +13,12 @@ export default function LoginV1() {
           <div className="space-y-6">
             <Command className="mx-auto size-12 text-primary-foreground" />
             <div className="space-y-2">
-              <h1 className="font-light text-5xl text-primary-foreground">Hello again</h1>
-              <p className="text-primary-foreground/80 text-xl">Login to continue</p>
+              <h1 className="font-light text-5xl text-primary-foreground">
+                Hello again
+              </h1>
+              <p className="text-primary-foreground/80 text-xl">
+                Login to continue
+              </p>
             </div>
           </div>
         </div>
@@ -25,7 +29,8 @@ export default function LoginV1() {
           <div className="space-y-4 text-center">
             <div className="font-medium tracking-tight">Login</div>
             <div className="mx-auto max-w-xl text-muted-foreground">
-              Welcome back. Enter your email and password, let&apos;s hope you remember them this time.
+              Welcome back. Enter your email and password, let&apos;s hope you
+              remember them this time.
             </div>
           </div>
           <div className="space-y-4">

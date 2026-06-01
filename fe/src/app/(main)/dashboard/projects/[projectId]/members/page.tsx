@@ -1,13 +1,29 @@
 import Link from "next/link";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { ArrowLeft, ShieldAlert } from "@/lib/icons";
 import { getProjectById } from "@/server/queries/project-queries";
 
 import { ManageMembersForm } from "../../_components/manage-members-form";
 
-export default async function ProjectMembersPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default async function ProjectMembersPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = await params;
 
   const project = await getProjectById(projectId).catch(() => null);
@@ -20,7 +36,9 @@ export default async function ProjectMembersPage({ params }: { params: Promise<{
             <ShieldAlert className="size-6 text-destructive" />
           </EmptyMedia>
           <EmptyTitle>Project unavailable</EmptyTitle>
-          <EmptyDescription>Project not found or you don't have permission to view its members.</EmptyDescription>
+          <EmptyDescription>
+            Project not found or you don't have permission to view its members.
+          </EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
@@ -39,7 +57,9 @@ export default async function ProjectMembersPage({ params }: { params: Promise<{
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">Project Members</h1>
+          <h1 className="font-semibold text-2xl tracking-tight">
+            Project Members
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">{project.name}</p>
         </div>
       </div>
@@ -47,7 +67,9 @@ export default async function ProjectMembersPage({ params }: { params: Promise<{
       <Card>
         <CardHeader>
           <CardTitle>Manage membership</CardTitle>
-          <CardDescription>Search, add, and remove project members.</CardDescription>
+          <CardDescription>
+            Search, add, and remove project members.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ManageMembersForm projectId={project.id} />

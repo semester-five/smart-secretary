@@ -52,7 +52,10 @@ function SidebarSkeleton() {
       <div className="space-y-1 px-2">
         {Array.from({ length: 5 }).map((_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: skeleton only
-          <div key={i} className="h-8 w-full rounded-md bg-sidebar-foreground/10" />
+          <div
+            key={i}
+            className="h-8 w-full rounded-md bg-sidebar-foreground/10"
+          />
         ))}
       </div>
     </div>
@@ -71,11 +74,15 @@ export default async function Layout({
   const rawVariant = cookieStore.get("sidebar_variant")?.value;
   const rawCollapsible = cookieStore.get("sidebar_collapsible")?.value;
   const variant =
-    rawVariant === "inset" || rawVariant === "floating" || rawVariant === "sidebar"
+    rawVariant === "inset" ||
+    rawVariant === "floating" ||
+    rawVariant === "sidebar"
       ? rawVariant
       : "inset";
   const collapsible =
-    rawCollapsible === "icon" || rawCollapsible === "none" || rawCollapsible === "offcanvas"
+    rawCollapsible === "icon" ||
+    rawCollapsible === "none" ||
+    rawCollapsible === "offcanvas"
       ? rawCollapsible
       : "icon";
 

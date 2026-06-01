@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 import { CreateProjectForm } from "../_components/create-project-form";
 
@@ -11,13 +17,17 @@ export default function CreateProjectPage() {
     <div className="mx-auto max-w-2xl animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
       <div>
         <h1 className="font-semibold text-2xl">Create Project</h1>
-        <p className="text-muted-foreground text-sm">Set up a new workspace for your organization.</p>
+        <p className="text-muted-foreground text-sm">
+          Set up a new workspace for your organization.
+        </p>
       </div>
 
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Project details</CardTitle>
-          <CardDescription>Fill in the required information below</CardDescription>
+          <CardDescription>
+            Fill in the required information below
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <CreateProjectForm />

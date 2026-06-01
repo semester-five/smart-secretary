@@ -16,7 +16,10 @@ type CreateMeetingFormProps = {
   onCreated?: (meeting: Meeting) => void;
 };
 
-export function CreateMeetingForm({ projectId, onCreated }: CreateMeetingFormProps) {
+export function CreateMeetingForm({
+  projectId,
+  onCreated,
+}: CreateMeetingFormProps) {
   const [title, setTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -48,7 +51,9 @@ export function CreateMeetingForm({ projectId, onCreated }: CreateMeetingFormPro
         }
         router.push(`/dashboard/projects/${projectId}/meetings/${meeting.id}`);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to create meeting.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create meeting.",
+        );
       }
     });
   };
@@ -56,7 +61,10 @@ export function CreateMeetingForm({ projectId, onCreated }: CreateMeetingFormPro
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_220px_auto] md:items-end animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="space-y-1.5">
-        <label htmlFor="meeting-title" className="font-medium text-sm text-foreground">
+        <label
+          htmlFor="meeting-title"
+          className="font-medium text-sm text-foreground"
+        >
           Title
         </label>
         <Input
@@ -68,7 +76,10 @@ export function CreateMeetingForm({ projectId, onCreated }: CreateMeetingFormPro
         />
       </div>
       <div className="space-y-1.5">
-        <label htmlFor="meeting-date" className="font-medium text-sm text-foreground">
+        <label
+          htmlFor="meeting-date"
+          className="font-medium text-sm text-foreground"
+        >
           Meeting date
         </label>
         <Input
