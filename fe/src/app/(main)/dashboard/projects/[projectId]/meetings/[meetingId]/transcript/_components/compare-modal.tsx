@@ -74,7 +74,7 @@ export function CompareModal({
     }
     if (!transcript) {
       return (
-        <div className="p-4 text-center text-sm text-muted-foreground">
+        <div className="p-4 text-center text-muted-foreground text-sm">
           Select a version
         </div>
       );
@@ -91,7 +91,7 @@ export function CompareModal({
             : "Unknown Speaker";
           return (
             <div key={seg.id} className="text-sm">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="mb-1 flex items-center gap-2">
                 <span className="font-semibold text-primary text-xs">
                   {speakerName}
                 </span>
@@ -99,7 +99,7 @@ export function CompareModal({
                   {formatMs(seg.start_ms)} - {formatMs(seg.end_ms)}
                 </span>
               </div>
-              <p className="leading-relaxed bg-muted/30 p-2 rounded-md">
+              <p className="rounded-md bg-muted/30 p-2 leading-relaxed">
                 {seg.text}
               </p>
             </div>
@@ -111,17 +111,17 @@ export function CompareModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-none max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="flex h-[80vh] w-[95vw] max-w-[1400px] flex-col overflow-hidden p-0 sm:max-w-none">
+        <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>Compare Versions</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 flex overflow-hidden bg-background gap-6">
+        <div className="flex flex-1 gap-6 overflow-hidden bg-background">
           {/* Column A */}
-          <div className="flex-1 min-w-0 flex flex-col border-r">
-            <div className="p-3 border-b bg-muted/10 flex items-center gap-3">
-              <span className="text-sm font-medium">Version:</span>
+          <div className="flex min-w-0 flex-1 flex-col border-r">
+            <div className="flex items-center gap-3 border-b bg-muted/10 p-3">
+              <span className="font-medium text-sm">Version:</span>
               <Select value={versionA} onValueChange={setVersionA}>
-                <SelectTrigger className="w-40 h-8">
+                <SelectTrigger className="h-8 w-40">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,11 +139,11 @@ export function CompareModal({
           </div>
 
           {/* Column B */}
-          <div className="flex-1 min-w-0 flex flex-col">
-            <div className="p-3 border-b bg-muted/10 flex items-center gap-3">
-              <span className="text-sm font-medium">Compare with:</span>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex items-center gap-3 border-b bg-muted/10 p-3">
+              <span className="font-medium text-sm">Compare with:</span>
               <Select value={versionB} onValueChange={setVersionB}>
-                <SelectTrigger className="w-40 h-8">
+                <SelectTrigger className="h-8 w-40">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
